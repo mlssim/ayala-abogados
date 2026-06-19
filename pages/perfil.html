@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Mi perfil - Ayala Abogados. Gestione sus datos personales y preferencias.">
+    <title>Mi Perfil | Ayala Abogados Madrid</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
+    <style>
+        .profile-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-light);
+            padding: 40px;
+            transition: all var(--transition-slow);
+        }
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--accent-navy);
+            color: var(--accent-gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            font-family: var(--font-heading);
+            margin: 0 auto 20px;
+        }
+        .profile-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .profile-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-family: var(--font-body);
+        }
+        .profile-nav-item:hover, .profile-nav-item.active {
+            background: rgba(201, 162, 39, 0.1);
+            color: var(--accent-gold);
+        }
+        .profile-nav-item i {
+            width: 20px;
+        }
+        .profile-section {
+            display: none;
+        }
+        .profile-section.active {
+            display: block;
+        }
+        .profile-stat {
+            text-align: center;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            transition: background-color var(--transition-slow);
+        }
+        .profile-stat-number {
+            font-family: var(--font-heading);
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+        }
+        .profile-stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        .appointment-history-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+        .appointment-history-item:hover {
+            border-color: var(--accent-gold);
+        }
+        .appointment-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-pendiente { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+        .status-confirmada { background: rgba(16, 185, 129, 0.15); color: #059669; }
+        .status-completada { background: rgba(59, 130, 246, 0.15); color: #2563eb; }
+        .status-cancelada { background: rgba(239, 68, 68, 0.15); color: #dc2626; }
+    </style>
+</head>
+<body>
+    <header class="header" id="header">
+        <div class="header-inner">
+            <a href="../index.html" class="logo">
+                <div class="logo-icon"><i class="fas fa-balance-scale"></i></div>
+                <div class="logo-text">Ayala <span>Abogados</span></div>
+            </a>
+            <nav class="nav-desktop">
+                <a href="../index.html" class="nav-link">Inicio</a>
+                <a href="servicios.html" class="nav-link">Servicios</a>
+                <a href="nosotros.html" class="nav-link">Nosotros</a>
+                <a href="cita.html" class="nav-link">Solicitar Cita</a>
+                <a href="contacto.html" class="nav-link">Contacto</a>
+            </nav>
+            <div class="header-actions">
+                <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema"><i class="fas fa-moon" id="themeIcon"></i></button>
+                <a href="tel:+34679448261" class="phone-cta"><i class="fas fa-phone"></i><span>679 448 261</span></a>
+                <button class="menu-toggle" id="menuToggle" aria-label="Menú"><span></span><span></span><span></span></button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="mobile-nav" id="mobileNav">
+        <a href="../index.html" class="mobile-nav-link">Inicio</a>
+        <a href="servicios.html" class="mobile-nav-link">Servicios</a>
+        <a href="nosotros.html" class="mobile-nav-link">Nosotros</a>
+        <a href="cita.html" class="mobile-nav-link">Solicitar Cita</a>
+        <a href="contacto.html" class="mobile-nav-link">Contacto</a>
+    </nav>
+
+    <!-- Page Hero -->
+    <section style="padding-top: calc(var(--header-height) + 60px); padding-bottom: 40px; background: var(--bg-secondary); transition: background-color var(--transition-slow);">
+        <div class="section" style="padding-top: 40px; padding-bottom: 20px;">
+            <span class="section-label">Cuenta</span>
+            <h1 style="margin-top: 16px;">Mi Perfil</h1>
+            <p style="color: var(--text-muted);">Gestione sus datos personales y consulte su historial</p>
+        </div>
+    </section>
+
+    <!-- Profile Content -->
+    <section class="section" style="padding-top: 40px; padding-bottom: 80px;">
+        <div style="display: grid; grid-template-columns: 280px 1fr; gap: 32px; align-items: start;">
+
+            <!-- Sidebar -->
+            <div class="animate">
+                <div class="profile-card" style="text-align: center; margin-bottom: 24px;">
+                    <div class="profile-avatar" id="profileAvatar">AA</div>
+                    <h3 id="profileName" style="margin-bottom: 4px;">Cargando...</h3>
+                    <p id="profileEmail" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px;">...</p>
+                    <span id="profileRole" class="section-label" style="font-size: 0.75rem; padding: 4px 12px;">Usuario</span>
+                </div>
+
+                <div class="profile-card" style="padding: 16px;">
+                    <nav class="profile-nav">
+                        <button class="profile-nav-item active" data-section="datos">
+                            <i class="fas fa-user"></i> Mis Datos
+                        </button>
+                        <button class="profile-nav-item" data-section="citas">
+                            <i class="fas fa-calendar-alt"></i> Mis Citas
+                        </button>
+                        <button class="profile-nav-item" data-section="seguridad">
+                            <i class="fas fa-shield-alt"></i> Seguridad
+                        </button>
+                        <div style="border-top: 1px solid var(--border-light); margin: 8px 0;"></div>
+                        <button class="profile-nav-item" style="color: #e53e3e;" id="logoutBtn">
+                            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                        </button>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="animate animate-delay-1">
+
+                <!-- Datos Personales -->
+                <div id="section-datos" class="profile-section active">
+                    <div class="profile-card">
+                        <h3 style="margin-bottom: 8px; font-family: var(--font-heading);">Datos Personales</h3>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px;">Actualice su información personal</p>
+
+                        <form id="profileForm">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                                <div class="form-group">
+                                    <label class="form-label">Nombre</label>
+                                    <input type="text" class="form-input" name="nombre" id="fieldNombre">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Apellidos</label>
+                                    <input type="text" class="form-input" name="apellidos" id="fieldApellidos">
+                                </div>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-input" id="fieldEmail" disabled style="background: var(--bg-secondary); cursor: not-allowed;">
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+                                <div class="form-group">
+                                    <label class="form-label">Teléfono</label>
+                                    <input type="tel" class="form-input" name="telefono" id="fieldTelefono">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">DNI/NIE</label>
+                                    <input type="text" class="form-input" name="dni" id="fieldDni">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Guardar Cambios
+                            </button>
+                        </form>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px;">
+                        <div class="profile-stat">
+                            <div class="profile-stat-number" id="statCitas">0</div>
+                            <div class="profile-stat-label">Citas Solicitadas</div>
+                        </div>
+                        <div class="profile-stat">
+                            <div class="profile-stat-number" id="statPendientes">0</div>
+                            <div class="profile-stat-label">Pendientes</div>
+                        </div>
+                        <div class="profile-stat">
+                            <div class="profile-stat-number" id="statCompletadas">0</div>
+                            <div class="profile-stat-label">Completadas</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mis Citas -->
+                <div id="section-citas" class="profile-section">
+                    <div class="profile-card">
+                        <h3 style="margin-bottom: 8px; font-family: var(--font-heading);">Historial de Citas</h3>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px;">Consulte el estado de sus citas solicitadas</p>
+
+                        <div id="appointmentsList">
+                            <p style="color: var(--text-muted); text-align: center; padding: 40px;">
+                                <i class="fas fa-calendar" style="font-size: 2rem; margin-bottom: 12px; display: block; opacity: 0.5;"></i>
+                                No tiene citas registradas.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seguridad -->
+                <div id="section-seguridad" class="profile-section">
+                    <div class="profile-card" style="margin-bottom: 24px;">
+                        <h3 style="margin-bottom: 8px; font-family: var(--font-heading);">Cambiar Contraseña</h3>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px;">Actualice su contraseña de acceso</p>
+
+                        <form id="passwordForm">
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label class="form-label">Contraseña Actual</label>
+                                <input type="password" class="form-input" name="currentPassword" required>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label class="form-label">Nueva Contraseña</label>
+                                <input type="password" class="form-input" name="newPassword" required minlength="6">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 24px;">
+                                <label class="form-label">Confirmar Nueva Contraseña</label>
+                                <input type="password" class="form-input" name="confirmPassword" required minlength="6">
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-key"></i> Actualizar Contraseña
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="profile-card" style="border-color: rgba(239, 68, 68, 0.3);">
+                        <h3 style="margin-bottom: 8px; font-family: var(--font-heading); color: #e53e3e;">
+                            <i class="fas fa-exclamation-triangle"></i> Zona de Peligro
+                        </h3>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px;">
+                            Eliminar su cuenta es una acción irreversible. Todos sus datos serán eliminados.
+                        </p>
+                        <button type="button" class="btn btn-outline" id="deleteAccountBtn" style="border-color: #e53e3e; color: #e53e3e;">
+                            <i class="fas fa-trash-alt"></i> Eliminar Mi Cuenta
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <div class="logo" style="margin-bottom: 16px;">
+                    <div class="logo-icon"><i class="fas fa-balance-scale"></i></div>
+                    <div class="logo-text">Ayala <span>Abogados</span></div>
+                </div>
+                <p>Bufete de abogados con más de 15 años de experiencia en Madrid.</p>
+            </div>
+            <div>
+                <h4 class="footer-title">Enlaces</h4>
+                <ul class="footer-links">
+                    <li><a href="../index.html">Inicio</a></li>
+                    <li><a href="servicios.html">Servicios</a></li>
+                    <li><a href="nosotros.html">Nosotros</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="footer-title">Legal</h4>
+                <ul class="footer-links">
+                    <li><a href="privacidad.html">Privacidad</a></li>
+                    <li><a href="legal.html">Aviso Legal</a></li>
+                    <li><a href="cookies.html">Cookies</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="footer-title">Contacto</h4>
+                <div class="footer-contact-item">
+                    <i class="fas fa-phone"></i>
+                    <div><a href="tel:+34679448261" style="color: rgba(255,255,255,0.6);">679 448 261</a></div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div>© 2026 Ayala Abogados. Todos los derechos reservados.</div>
+        </div>
+    </footer>
+
+    <button class="scroll-top" id="scrollTop" aria-label="Volver arriba"><i class="fas fa-chevron-up"></i></button>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/auth-service.js"></script>
+    <script src="../js/auth-ui.js"></script>
+    <script>
+    (function() {
+        // Verificar autenticación
+        if (!window.AuthService.isAuthenticated()) {
+            window.location.href = '../index.html';
+            return;
+        }
+
+        const user = window.AuthService.getCurrentUser();
+        const session = window.AuthService.getCurrentSession();
+
+        // Cargar datos del perfil
+        document.getElementById('profileName').textContent = user.nombre + ' ' + user.apellidos;
+        document.getElementById('profileEmail').textContent = user.email;
+        document.getElementById('profileAvatar').textContent = user.nombre.charAt(0) + user.apellidos.charAt(0);
+
+        const roleLabel = document.getElementById('profileRole');
+        if (user.role === 'administrador') {
+            roleLabel.textContent = 'Administrador';
+            roleLabel.style.background = 'var(--accent-gold)';
+            roleLabel.style.color = '#1a202c';
+        } else {
+            roleLabel.textContent = 'Usuario';
+        }
+
+        // Rellenar formulario
+        document.getElementById('fieldNombre').value = user.nombre;
+        document.getElementById('fieldApellidos').value = user.apellidos;
+        document.getElementById('fieldEmail').value = user.email;
+        document.getElementById('fieldTelefono').value = user.telefono || '';
+        document.getElementById('fieldDni').value = user.dni || '';
+
+        // Navegación entre secciones
+        document.querySelectorAll('.profile-nav-item[data-section]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const section = this.dataset.section;
+
+                document.querySelectorAll('.profile-nav-item').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+
+                document.querySelectorAll('.profile-section').forEach(s => s.classList.remove('active'));
+                document.getElementById('section-' + section).classList.add('active');
+            });
+        });
+
+        // Guardar perfil
+        document.getElementById('profileForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            const result = window.AuthService.updateProfile({
+                nombre: formData.get('nombre'),
+                apellidos: formData.get('apellidos'),
+                telefono: formData.get('telefono'),
+                dni: formData.get('dni')
+            });
+
+            if (result.success) {
+                window.AuthUI.showNotification('success', 'Perfil actualizado', result.message);
+                document.getElementById('profileName').textContent = 
+                    formData.get('nombre') + ' ' + formData.get('apellidos');
+                document.getElementById('profileAvatar').textContent = 
+                    formData.get('nombre').charAt(0) + formData.get('apellidos').charAt(0);
+            } else {
+                window.AuthUI.showNotification('error', 'Error', result.error);
+            }
+        });
+
+        // Cambiar contraseña
+        document.getElementById('passwordForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            if (formData.get('newPassword') !== formData.get('confirmPassword')) {
+                window.AuthUI.showNotification('error', 'Error', 'Las contraseñas no coinciden.');
+                return;
+            }
+
+            const result = window.AuthService.changePassword(
+                formData.get('currentPassword'),
+                formData.get('newPassword')
+            );
+
+            if (result.success) {
+                window.AuthUI.showNotification('success', 'Contraseña actualizada', result.message);
+                this.reset();
+            } else {
+                window.AuthUI.showNotification('error', 'Error', result.error);
+            }
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            window.AuthService.logout();
+            window.location.href = '../index.html';
+        });
+
+        // Cargar citas del usuario
+        function loadUserAppointments() {
+            const allAppointments = JSON.parse(localStorage.getItem('pending_appointments') || '[]');
+            const userAppointments = allAppointments.filter(a => a.email === user.email);
+
+            document.getElementById('statCitas').textContent = userAppointments.length;
+            document.getElementById('statPendientes').textContent = 
+                userAppointments.filter(a => a.status === 'pendiente').length;
+            document.getElementById('statCompletadas').textContent = 
+                userAppointments.filter(a => a.status === 'completada').length;
+
+            const listContainer = document.getElementById('appointmentsList');
+            if (userAppointments.length === 0) {
+                listContainer.innerHTML = `
+                    <p style="color: var(--text-muted); text-align: center; padding: 40px;">
+                        <i class="fas fa-calendar" style="font-size: 2rem; margin-bottom: 12px; display: block; opacity: 0.5;"></i>
+                        No tiene citas registradas.
+                    </p>`;
+                return;
+            }
+
+            listContainer.innerHTML = userAppointments.map(app => {
+                const date = new Date(app.fecha_envio);
+                const dateStr = date.toLocaleDateString('es-ES');
+                const statusClass = 'status-' + (app.status || 'pendiente');
+                const statusText = {
+                    'pendiente': 'Pendiente',
+                    'confirmada': 'Confirmada',
+                    'completada': 'Completada',
+                    'cancelada': 'Cancelada'
+                }[app.status || 'pendiente'];
+
+                return `
+                    <div class="appointment-history-item">
+                        <div style="width: 48px; height: 48px; min-width: 48px; background: rgba(201,162,39,0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--accent-gold);">
+                            <i class="fas fa-calendar-check" style="font-size: 1.2rem;"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; margin-bottom: 4px;">${app.tipo_consulta || 'Consulta General'}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted);">
+                                <i class="fas fa-clock" style="margin-right: 4px;"></i>${dateStr}
+                                ${app.fecha_preferida ? ' · ' + app.fecha_preferida : ''}
+                                ${app.modalidad ? ' · ' + app.modalidad : ''}
+                            </div>
+                        </div>
+                        <span class="appointment-status ${statusClass}">${statusText}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        loadUserAppointments();
+
+    })();
+    </script>
+</body>
+</html>

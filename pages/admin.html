@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Panel de Administración - Ayala Abogados. Gestión de usuarios y citas.">
+    <title>Panel Admin | Ayala Abogados Madrid</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
+    <style>
+        .admin-sidebar {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-light);
+            padding: 24px;
+            transition: all var(--transition-slow);
+        }
+        .admin-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-family: var(--font-body);
+            margin-bottom: 4px;
+        }
+        .admin-nav-item:hover, .admin-nav-item.active {
+            background: rgba(201, 162, 39, 0.1);
+            color: var(--accent-gold);
+        }
+        .admin-nav-item i { width: 20px; }
+        .admin-section { display: none; }
+        .admin-section.active { display: block; }
+
+        .admin-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-light);
+            padding: 32px;
+            transition: all var(--transition-slow);
+        }
+        .admin-stat {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 24px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            transition: background-color var(--transition-slow);
+        }
+        .admin-stat-icon {
+            width: 56px;
+            height: 56px;
+            min-width: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+        }
+        .admin-stat-value {
+            font-family: var(--font-heading);
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .admin-stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th {
+            text-align: left;
+            padding: 14px 16px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            border-bottom: 2px solid var(--border-color);
+        }
+        .data-table td {
+            padding: 14px 16px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-light);
+        }
+        .data-table tr:hover td {
+            background: var(--bg-secondary);
+        }
+        .role-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .role-admin {
+            background: rgba(201, 162, 39, 0.15);
+            color: var(--accent-gold);
+        }
+        .role-user {
+            background: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+        }
+        .status-active {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .status-inactive {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            background: var(--bg-secondary);
+            color: var(--text-muted);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            margin-right: 4px;
+        }
+        .action-btn:hover {
+            background: var(--accent-gold);
+            color: #1a202c;
+        }
+        .action-btn.danger:hover {
+            background: #ef4444;
+            color: white;
+        }
+
+        .appointment-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            margin-bottom: 12px;
+            border: 1px solid var(--border-light);
+            transition: all 0.2s;
+        }
+        .appointment-row:hover {
+            border-color: var(--accent-gold);
+        }
+        .appointment-priority {
+            width: 4px;
+            height: 40px;
+            border-radius: 2px;
+            min-width: 4px;
+        }
+        .priority-normal { background: #3b82f6; }
+        .priority-urgente { background: #f59e0b; }
+        .priority-muy-urgente { background: #ef4444; }
+
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-muted);
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-btn.active, .filter-btn:hover {
+            background: var(--accent-gold);
+            color: #1a202c;
+            border-color: var(--accent-gold);
+        }
+
+        .search-input {
+            padding: 10px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            width: 100%;
+            max-width: 300px;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+        }
+    </style>
+</head>
+<body>
+    <header class="header" id="header">
+        <div class="header-inner">
+            <a href="../index.html" class="logo">
+                <div class="logo-icon"><i class="fas fa-balance-scale"></i></div>
+                <div class="logo-text">Ayala <span>Abogados</span></div>
+            </a>
+            <nav class="nav-desktop">
+                <a href="../index.html" class="nav-link">Inicio</a>
+                <a href="servicios.html" class="nav-link">Servicios</a>
+                <a href="nosotros.html" class="nav-link">Nosotros</a>
+                <a href="cita.html" class="nav-link">Solicitar Cita</a>
+                <a href="contacto.html" class="nav-link">Contacto</a>
+            </nav>
+            <div class="header-actions">
+                <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema"><i class="fas fa-moon" id="themeIcon"></i></button>
+                <a href="tel:+34679448261" class="phone-cta"><i class="fas fa-phone"></i><span>679 448 261</span></a>
+                <button class="menu-toggle" id="menuToggle" aria-label="Menú"><span></span><span></span><span></span></button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="mobile-nav" id="mobileNav">
+        <a href="../index.html" class="mobile-nav-link">Inicio</a>
+        <a href="servicios.html" class="mobile-nav-link">Servicios</a>
+        <a href="nosotros.html" class="mobile-nav-link">Nosotros</a>
+        <a href="cita.html" class="mobile-nav-link">Solicitar Cita</a>
+        <a href="contacto.html" class="mobile-nav-link">Contacto</a>
+    </nav>
+
+    <!-- Page Hero -->
+    <section style="padding-top: calc(var(--header-height) + 60px); padding-bottom: 40px; background: var(--bg-hero); position: relative; overflow: hidden;">
+        <div style="position: absolute; inset: 0; background: linear-gradient(135deg, rgba(26,54,93,0.95) 0%, rgba(15,23,42,0.9) 100%);"></div>
+        <div class="section" style="position: relative; z-index: 2; padding-top: 40px; padding-bottom: 40px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                <div>
+                    <span class="section-label" style="background: rgba(201,162,39,0.2); color: var(--accent-gold); border: 1px solid rgba(201,162,39,0.3);">Administración</span>
+                    <h1 style="color: white; margin-top: 16px; font-size: clamp(1.8rem, 4vw, 2.5rem);">Panel de Control</h1>
+                    <p style="color: rgba(255,255,255,0.7); margin-top: 8px;">Gestión de usuarios, citas y estadísticas</p>
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <a href="perfil.html" class="btn btn-secondary" style="border-color: rgba(255,255,255,0.3);">
+                        <i class="fas fa-user"></i> Mi Perfil
+                    </a>
+                    <a href="../index.html" class="btn btn-primary">
+                        <i class="fas fa-home"></i> Web
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Admin Content -->
+    <section class="section" style="padding-top: 40px; padding-bottom: 80px;">
+        <div style="display: grid; grid-template-columns: 260px 1fr; gap: 32px; align-items: start;">
+
+            <!-- Sidebar -->
+            <div class="animate">
+                <div class="admin-sidebar" style="margin-bottom: 24px;">
+                    <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--border-light); margin-bottom: 16px;">
+                        <div style="width: 44px; height: 44px; border-radius: 50%; background: var(--accent-navy); color: var(--accent-gold); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem;">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 600; font-size: 0.95rem;">Administrador</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">Panel de gestión</div>
+                        </div>
+                    </div>
+                    <nav>
+                        <button class="admin-nav-item active" data-section="dashboard">
+                            <i class="fas fa-chart-line"></i> Dashboard
+                        </button>
+                        <button class="admin-nav-item" data-section="usuarios">
+                            <i class="fas fa-users"></i> Usuarios
+                        </button>
+                        <button class="admin-nav-item" data-section="citas">
+                            <i class="fas fa-calendar-alt"></i> Citas
+                        </button>
+                        <button class="admin-nav-item" data-section="config">
+                            <i class="fas fa-cog"></i> Configuración
+                        </button>
+                    </nav>
+                </div>
+
+                <div class="admin-sidebar">
+                    <h4 style="font-size: 0.9rem; margin-bottom: 12px; color: var(--text-muted);">Información del Sistema</h4>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.8;">
+                        <div><strong>Versión:</strong> 1.0.0</div>
+                        <div><strong>Almacenamiento:</strong> <span id="storageInfo">Local</span></div>
+                        <div><strong>Último acceso:</strong> <span id="lastAccess">--</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="animate animate-delay-1">
+
+                <!-- DASHBOARD -->
+                <div id="admin-dashboard" class="admin-section active">
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px;">
+                        <div class="admin-stat">
+                            <div class="admin-stat-icon" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div>
+                                <div class="admin-stat-value" id="dashTotalUsers">0</div>
+                                <div class="admin-stat-label">Usuarios Registrados</div>
+                            </div>
+                        </div>
+                        <div class="admin-stat">
+                            <div class="admin-stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                                <i class="fas fa-user-shield"></i>
+                            </div>
+                            <div>
+                                <div class="admin-stat-value" id="dashTotalAdmins">0</div>
+                                <div class="admin-stat-label">Administradores</div>
+                            </div>
+                        </div>
+                        <div class="admin-stat">
+                            <div class="admin-stat-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div>
+                                <div class="admin-stat-value" id="dashTotalCitas">0</div>
+                                <div class="admin-stat-label">Citas Solicitadas</div>
+                            </div>
+                        </div>
+                        <div class="admin-stat">
+                            <div class="admin-stat-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div>
+                                <div class="admin-stat-value" id="dashPendingCitas">0</div>
+                                <div class="admin-stat-label">Citas Pendientes</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-card">
+                        <h3 style="margin-bottom: 8px; font-family: var(--font-heading);">Citas Recientes</h3>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px;">Últimas solicitudes de cita recibidas</p>
+                        <div id="recentAppointments">
+                            <p style="color: var(--text-muted); text-align: center; padding: 40px;">No hay citas recientes</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- USUARIOS -->
+                <div id="admin-usuarios" class="admin-section">
+                    <div class="admin-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+                            <div>
+                                <h3 style="font-family: var(--font-heading);">Gestión de Usuarios</h3>
+                                <p style="color: var(--text-muted); font-size: 0.9rem;">Administre los usuarios registrados en el sistema</p>
+                            </div>
+                            <input type="text" class="search-input" id="userSearch" placeholder="Buscar usuario...">
+                        </div>
+
+                        <div class="filter-bar">
+                            <button class="filter-btn active" data-filter="all">Todos</button>
+                            <button class="filter-btn" data-filter="administrador">Admins</button>
+                            <button class="filter-btn" data-filter="usuario">Usuarios</button>
+                            <button class="filter-btn" data-filter="active">Activos</button>
+                            <button class="filter-btn" data-filter="inactive">Inactivos</button>
+                        </div>
+
+                        <div style="overflow-x: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Usuario</th>
+                                        <th>Email</th>
+                                        <th>Teléfono</th>
+                                        <th>Rol</th>
+                                        <th>Estado</th>
+                                        <th>Registro</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CITAS -->
+                <div id="admin-citas" class="admin-section">
+                    <div class="admin-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+                            <div>
+                                <h3 style="font-family: var(--font-heading);">Gestión de Citas</h3>
+                                <p style="color: var(--text-muted); font-size: 0.9rem;">Todas las solicitudes de cita recibidas</p>
+                            </div>
+                            <div class="filter-bar" style="margin-bottom: 0;">
+                                <button class="filter-btn active" data-apt-filter="all">Todas</button>
+                                <button class="filter-btn" data-apt-filter="pendiente">Pendientes</button>
+                                <button class="filter-btn" data-apt-filter="confirmada">Confirmadas</button>
+                                <button class="filter-btn" data-apt-filter="completada">Completadas</button>
+                            </div>
+                        </div>
+
+                        <div id="allAppointmentsList">
+                            <p style="color: var(--text-muted); text-align: center; padding: 40px;">No hay citas registradas</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONFIGURACIÓN -->
+                <div id="admin-config" class="admin-section">
+                    <div class="admin-card" style="margin-bottom: 24px;">
+                        <h3 style="margin-bottom: 8px; font-family: var(--font-heading);">
+                            <i class="fas fa-database" style="color: var(--accent-gold); margin-right: 8px;"></i>
+                            Gestión de Datos
+                        </h3>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px;">Administre los datos almacenados localmente</p>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div style="padding: 20px; background: var(--bg-secondary); border-radius: var(--radius-md); text-align: center;">
+                                <i class="fas fa-users" style="font-size: 1.5rem; color: var(--accent-gold); margin-bottom: 8px;"></i>
+                                <div style="font-weight: 600; margin-bottom: 4px;">Exportar Usuarios</div>
+                                <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">Descargar JSON de usuarios</div>
+                                <button class="btn btn-outline" id="exportUsersBtn" style="font-size: 0.85rem; padding: 8px 16px;">
+                                    <i class="fas fa-download"></i> Exportar
+                                </button>
+                            </div>
+                            <div style="padding: 20px; background: var(--bg-secondary); border-radius: var(--radius-md); text-align: center;">
+                                <i class="fas fa-calendar-alt" style="font-size: 1.5rem; color: var(--accent-gold); margin-bottom: 8px;"></i>
+                                <div style="font-weight: 600; margin-bottom: 4px;">Exportar Citas</div>
+                                <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">Descargar JSON de citas</div>
+                                <button class="btn btn-outline" id="exportCitasBtn" style="font-size: 0.85rem; padding: 8px 16px;">
+                                    <i class="fas fa-download"></i> Exportar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-card" style="border-color: rgba(239, 68, 68, 0.3);">
+                        <h3 style="margin-bottom: 8px; font-family: var(--font-heading); color: #e53e3e;">
+                            <i class="fas fa-exclamation-triangle"></i> Zona de Peligro
+                        </h3>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px;">
+                            Estas acciones son irreversibles. Use con precaución.
+                        </p>
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                            <button class="btn btn-outline" id="clearAppointmentsBtn" style="border-color: #f59e0b; color: #f59e0b;">
+                                <i class="fas fa-trash"></i> Limpiar Citas
+                            </button>
+                            <button class="btn btn-outline" id="resetSystemBtn" style="border-color: #e53e3e; color: #e53e3e;">
+                                <i class="fas fa-redo"></i> Resetear Sistema
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <div class="logo" style="margin-bottom: 16px;">
+                    <div class="logo-icon"><i class="fas fa-balance-scale"></i></div>
+                    <div class="logo-text">Ayala <span>Abogados</span></div>
+                </div>
+                <p>Bufete de abogados con más de 15 años de experiencia en Madrid.</p>
+            </div>
+            <div>
+                <h4 class="footer-title">Enlaces</h4>
+                <ul class="footer-links">
+                    <li><a href="../index.html">Inicio</a></li>
+                    <li><a href="servicios.html">Servicios</a></li>
+                    <li><a href="nosotros.html">Nosotros</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="footer-title">Legal</h4>
+                <ul class="footer-links">
+                    <li><a href="privacidad.html">Privacidad</a></li>
+                    <li><a href="legal.html">Aviso Legal</a></li>
+                    <li><a href="cookies.html">Cookies</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="footer-title">Contacto</h4>
+                <div class="footer-contact-item">
+                    <i class="fas fa-phone"></i>
+                    <div><a href="tel:+34679448261" style="color: rgba(255,255,255,0.6);">679 448 261</a></div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div>© 2026 Ayala Abogados. Todos los derechos reservados.</div>
+        </div>
+    </footer>
+
+    <button class="scroll-top" id="scrollTop" aria-label="Volver arriba"><i class="fas fa-chevron-up"></i></button>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/auth-service.js"></script>
+    <script src="../js/auth-ui.js"></script>
+    <script>
+    (function() {
+        // Verificar autenticación y permisos de admin
+        if (!window.AuthService.isAuthenticated()) {
+            window.location.href = '../index.html';
+            return;
+        }
+        if (!window.AuthService.isAdmin()) {
+            window.location.href = 'perfil.html';
+            return;
+        }
+
+        // Actualizar último acceso
+        document.getElementById('lastAccess').textContent = new Date().toLocaleString('es-ES');
+
+        // Navegación entre secciones
+        document.querySelectorAll('.admin-nav-item').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const section = this.dataset.section;
+
+                document.querySelectorAll('.admin-nav-item').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+
+                document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+                document.getElementById('admin-' + section).classList.add('active');
+            });
+        });
+
+        // ===== DASHBOARD =====
+        function updateDashboard() {
+            const usersResult = window.AuthService.getAllUsers();
+            const users = usersResult.success ? usersResult.users : [];
+            const appointments = JSON.parse(localStorage.getItem('pending_appointments') || '[]');
+
+            document.getElementById('dashTotalUsers').textContent = users.length;
+            document.getElementById('dashTotalAdmins').textContent = users.filter(u => u.role === 'administrador').length;
+            document.getElementById('dashTotalCitas').textContent = appointments.length;
+            document.getElementById('dashPendingCitas').textContent = appointments.filter(a => a.status === 'pendiente').length;
+
+            // Citas recientes (últimas 5)
+            const recent = appointments.slice(-5).reverse();
+            const recentContainer = document.getElementById('recentAppointments');
+            if (recent.length === 0) {
+                recentContainer.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 40px;">No hay citas recientes</p>';
+            } else {
+                recentContainer.innerHTML = recent.map(app => {
+                    const date = new Date(app.fecha_envio);
+                    return `
+                        <div class="appointment-row">
+                            <div class="appointment-priority priority-${app.urgencia || 'normal'}"></div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; margin-bottom: 2px;">${app.nombre} ${app.apellidos}</div>
+                                <div style="font-size: 0.85rem; color: var(--text-muted);">
+                                    ${app.tipo_consulta || 'Consulta'} · ${app.telefono} · ${date.toLocaleDateString('es-ES')}
+                                </div>
+                            </div>
+                            <span class="appointment-status status-${app.status || 'pendiente'}">${app.status || 'Pendiente'}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // ===== USUARIOS =====
+        let currentFilter = 'all';
+        let currentSearch = '';
+
+        function renderUsersTable() {
+            const result = window.AuthService.getAllUsers();
+            if (!result.success) return;
+
+            let users = result.users;
+
+            // Aplicar filtros
+            if (currentFilter === 'administrador') users = users.filter(u => u.role === 'administrador');
+            if (currentFilter === 'usuario') users = users.filter(u => u.role === 'usuario');
+            if (currentFilter === 'active') users = users.filter(u => u.active);
+            if (currentFilter === 'inactive') users = users.filter(u => !u.active);
+
+            // Aplicar búsqueda
+            if (currentSearch) {
+                const search = currentSearch.toLowerCase();
+                users = users.filter(u => 
+                    u.nombre.toLowerCase().includes(search) ||
+                    u.apellidos.toLowerCase().includes(search) ||
+                    u.email.toLowerCase().includes(search)
+                );
+            }
+
+            const tbody = document.getElementById('usersTableBody');
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">No se encontraron usuarios</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = users.map(u => {
+                const date = new Date(u.createdAt);
+                return `
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--accent-navy); color: var(--accent-gold); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem;">
+                                    ${u.nombre.charAt(0)}${u.apellidos.charAt(0)}
+                                </div>
+                                <div>
+                                    <div style="font-weight: 600;">${u.nombre} ${u.apellidos}</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted);">${u.dni || 'Sin DNI'}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${u.email}</td>
+                        <td>${u.telefono || '--'}</td>
+                        <td>
+                            <span class="role-badge ${u.role === 'administrador' ? 'role-admin' : 'role-user'}">
+                                <i class="fas ${u.role === 'administrador' ? 'fa-shield-alt' : 'fa-user'}"></i>
+                                ${u.role === 'administrador' ? 'Admin' : 'Usuario'}
+                            </span>
+                        </td>
+                        <td>
+                            <span style="font-size: 0.85rem;">
+                                <span class="${u.active ? 'status-active' : 'status-inactive'}"></span>
+                                ${u.active ? 'Activo' : 'Inactivo'}
+                            </span>
+                        </td>
+                        <td style="font-size: 0.85rem; color: var(--text-muted);">${date.toLocaleDateString('es-ES')}</td>
+                        <td>
+                            <button class="action-btn" title="Cambiar rol" onclick="toggleRole('${u.id}')">
+                                <i class="fas fa-exchange-alt"></i>
+                            </button>
+                            <button class="action-btn" title="${u.active ? 'Desactivar' : 'Activar'}" onclick="toggleStatus('${u.id}')">
+                                <i class="fas ${u.active ? 'fa-ban' : 'fa-check'}"></i>
+                            </button>
+                            <button class="action-btn danger" title="Eliminar" onclick="deleteUser('${u.id}')">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Filtros de usuarios
+        document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentFilter = this.dataset.filter;
+                renderUsersTable();
+            });
+        });
+
+        // Búsqueda
+        document.getElementById('userSearch').addEventListener('input', function() {
+            currentSearch = this.value;
+            renderUsersTable();
+        });
+
+        // Acciones de usuario
+        window.toggleRole = function(userId) {
+            const user = window.AuthService.getAllUsers().users.find(u => u.id === userId);
+            if (!user) return;
+            const newRole = user.role === 'administrador' ? 'usuario' : 'administrador';
+            const result = window.AuthService.changeUserRole(userId, newRole);
+            if (result.success) {
+                window.AuthUI.showNotification('success', 'Rol actualizado', result.message);
+                renderUsersTable();
+                updateDashboard();
+            } else {
+                window.AuthUI.showNotification('error', 'Error', result.error);
+            }
+        };
+
+        window.toggleStatus = function(userId) {
+            const result = window.AuthService.toggleUserStatus(userId);
+            if (result.success) {
+                window.AuthUI.showNotification('success', 'Estado actualizado', result.message);
+                renderUsersTable();
+            } else {
+                window.AuthUI.showNotification('error', 'Error', result.error);
+            }
+        };
+
+        window.deleteUser = function(userId) {
+            if (!confirm('¿Está seguro de que desea eliminar este usuario? Esta acción no se puede deshacer.')) return;
+            const result = window.AuthService.deleteUser(userId);
+            if (result.success) {
+                window.AuthUI.showNotification('success', 'Usuario eliminado', result.message);
+                renderUsersTable();
+                updateDashboard();
+            } else {
+                window.AuthUI.showNotification('error', 'Error', result.error);
+            }
+        };
+
+        // ===== CITAS =====
+        let currentAptFilter = 'all';
+
+        function renderAppointments() {
+            let appointments = JSON.parse(localStorage.getItem('pending_appointments') || '[]');
+
+            if (currentAptFilter !== 'all') {
+                appointments = appointments.filter(a => (a.status || 'pendiente') === currentAptFilter);
+            }
+
+            const container = document.getElementById('allAppointmentsList');
+            if (appointments.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 40px;">No hay citas en esta categoría</p>';
+                return;
+            }
+
+            container.innerHTML = appointments.slice().reverse().map(app => {
+                const date = new Date(app.fecha_envio);
+                const statusClass = 'status-' + (app.status || 'pendiente');
+                const statusText = {
+                    'pendiente': 'Pendiente',
+                    'confirmada': 'Confirmada',
+                    'completada': 'Completada',
+                    'cancelada': 'Cancelada'
+                }[app.status || 'pendiente'];
+
+                return `
+                    <div class="appointment-row">
+                        <div class="appointment-priority priority-${app.urgencia || 'normal'}"></div>
+                        <div style="width: 48px; height: 48px; min-width: 48px; background: rgba(201,162,39,0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--accent-gold);">
+                            <i class="fas fa-calendar-check" style="font-size: 1.2rem;"></i>
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                                <span style="font-weight: 600;">${app.nombre} ${app.apellidos}</span>
+                                <span class="appointment-status ${statusClass}">${statusText}</span>
+                            </div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
+                                <i class="fas fa-envelope" style="width: 14px;"></i> ${app.email} · 
+                                <i class="fas fa-phone" style="width: 14px;"></i> ${app.telefono} · 
+                                <i class="fas fa-tag" style="width: 14px;"></i> ${app.tipo_consulta || 'General'}
+                            </div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+                                <i class="fas fa-clock" style="width: 14px;"></i> Solicitada: ${date.toLocaleString('es-ES')}
+                                ${app.fecha_preferida ? ' · Preferida: ' + app.fecha_preferida + ' ' + (app.hora_preferida || '') : ''}
+                                ${app.modalidad ? ' · Modalidad: ' + app.modalidad : ''}
+                            </div>
+                            ${app.descripcion ? `<div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 8px; padding: 8px; background: var(--bg-primary); border-radius: 6px;">${app.descripcion}</div>` : ''}
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <button class="action-btn" title="Confirmar" onclick="updateAptStatus('${app.fecha_envio}', 'confirmada')">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="action-btn" title="Completar" onclick="updateAptStatus('${app.fecha_envio}', 'completada')">
+                                <i class="fas fa-check-double"></i>
+                            </button>
+                            <button class="action-btn danger" title="Cancelar" onclick="updateAptStatus('${app.fecha_envio}', 'cancelada')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.updateAptStatus = function(timestamp, status) {
+            const appointments = JSON.parse(localStorage.getItem('pending_appointments') || '[]');
+            const apt = appointments.find(a => a.fecha_envio === timestamp);
+            if (apt) {
+                apt.status = status;
+                localStorage.setItem('pending_appointments', JSON.stringify(appointments));
+                window.AuthUI.showNotification('success', 'Cita actualizada', `Estado cambiado a: ${status}`);
+                renderAppointments();
+                updateDashboard();
+            }
+        };
+
+        document.querySelectorAll('.filter-btn[data-apt-filter]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn[data-apt-filter]').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentAptFilter = this.dataset.aptFilter;
+                renderAppointments();
+            });
+        });
+
+        // ===== CONFIGURACIÓN =====
+        document.getElementById('exportUsersBtn').addEventListener('click', function() {
+            const result = window.AuthService.getAllUsers();
+            if (result.success) {
+                const dataStr = JSON.stringify(result.users, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'usuarios_ayala_' + new Date().toISOString().slice(0, 10) + '.json';
+                a.click();
+                URL.revokeObjectURL(url);
+                window.AuthUI.showNotification('success', 'Exportación completada', 'Archivo de usuarios descargado.');
+            }
+        });
+
+        document.getElementById('exportCitasBtn').addEventListener('click', function() {
+            const appointments = JSON.parse(localStorage.getItem('pending_appointments') || '[]');
+            const dataStr = JSON.stringify(appointments, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'citas_ayala_' + new Date().toISOString().slice(0, 10) + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            window.AuthUI.showNotification('success', 'Exportación completada', 'Archivo de citas descargado.');
+        });
+
+        document.getElementById('clearAppointmentsBtn').addEventListener('click', function() {
+            if (!confirm('¿Está seguro de que desea eliminar TODAS las citas? Esta acción no se puede deshacer.')) return;
+            localStorage.removeItem('pending_appointments');
+            window.AuthUI.showNotification('success', 'Citas eliminadas', 'Todas las citas han sido eliminadas.');
+            renderAppointments();
+            updateDashboard();
+        });
+
+        document.getElementById('resetSystemBtn').addEventListener('click', function() {
+            if (!confirm('¿ESTÁ COMPLETAMENTE SEGURO? Esto eliminará TODOS los usuarios, citas y datos del sistema. Esta acción es IRREVERSIBLE.')) return;
+            if (!confirm('ÚLTIMA CONFIRMACIÓN: ¿Desea resetear completamente el sistema?')) return;
+            localStorage.clear();
+            window.AuthService.createDefaultAdmin();
+            window.AuthUI.showNotification('success', 'Sistema reseteado', 'El sistema ha sido restaurado a su estado inicial.');
+            setTimeout(() => window.location.reload(), 1500);
+        });
+
+        // Inicializar
+        updateDashboard();
+        renderUsersTable();
+        renderAppointments();
+
+    })();
+    </script>
+</body>
+</html>
