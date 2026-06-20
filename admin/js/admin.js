@@ -1,29 +1,26 @@
 /* ============================================
-   AYALA ABOGADOS - ADMIN PANEL JAVASCRIPT
-   Con calendario interactivo y modal mejorado
-   Versión con estilos CSS (sin inline)
+   AYALA ABOGADOS - ADMIN PANEL (FIREBASE)
+   Con calendario interactivo y sincronización en tiempo real
    ============================================ */
 
+import { db } from './firebase-config.js';
+import { 
+    ref, 
+    onValue, 
+    get, 
+    update, 
+    remove 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
 // ===== DATOS GLOBALES =====
-let appointments = JSON.parse(localStorage.getItem('ayala_appointments')) || [];
-let clients = JSON.parse(localStorage.getItem('ayala_clients')) || [];
-let notifications = JSON.parse(localStorage.getItem('ayala_notifications')) || [];
-let nextId = parseInt(localStorage.getItem('ayala_nextId')) || 1;
+let appointments = [];
+let clients = [];
+let notifications = [];
+let calendarCurrentMonth = new Date().getMonth();
+let calendarCurrentYear = new Date().getFullYear();
+let appointmentsUnsubscribe = null;
 
-// ===== GUARDADO =====
-function saveData() {
-    localStorage.setItem('ayala_appointments', JSON.stringify(appointments));
-    localStorage.setItem('ayala_clients', JSON.stringify(clients));
-    localStorage.setItem('ayala_notifications', JSON.stringify(notifications));
-    localStorage.setItem('ayala_nextId', nextId.toString());
-}
-
-function generateId() {
-    const id = nextId++;
-    saveData();
-    return id;
-}
-
+// ===== UTILIDADES =====
 function formatDate(dateStr) {
     if (!dateStr) return 'No especificada';
     const d = new Date(dateStr);
@@ -31,7 +28,6 @@ function formatDate(dateStr) {
     return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-// Función para formatear fecha a YYYY-MM-DD (para comparar)
 function toDateStr(date) {
     if (!date) return null;
     const d = new Date(date);
@@ -49,10 +45,56 @@ function getStatusBadge(status) {
     return map[status] || map['pendiente'];
 }
 
-// ========== CALENDARIO ==========
-let calendarCurrentMonth = new Date().getMonth();
-let calendarCurrentYear = new Date().getFullYear();
+// ========== SINCRONIZACIÓN CON FIREBASE ==========
+function syncWithFirebase() {
+    // Escuchar citas en tiempo real
+    const citasRef = ref(db, 'citas');
+    appointmentsUnsubscribe = onValue(citasRef, (snapshot) => {
+        const citas = snapshot.val() || {};
+        appointments = Object.values(citas).sort((a, b) => 
+            new Date(b.fechaCreacion || 0) - new Date(a.fechaCreacion || 0)
+        );
+        
+        renderDashboardAppointments();
+        renderAppointmentsTable();
+        updateStats();
+        renderCalendar(calendarCurrentMonth, calendarCurrentYear);
+    });
 
+    // Escuchar usuarios (clientes)
+    const usersRef = ref(db, 'usuarios');
+    onValue(usersRef, (snapshot) => {
+        const users = snapshot.val() || {};
+        clients = Object.values(users).filter(u => u.role !== 'administrador').map(u => ({
+            id: u.uid,
+            nombre: u.nombre,
+            apellidos: u.apellidos || '',
+            dni: u.dni || 'N/D',
+            telefono: u.telefono || '',
+            email: u.email,
+            total_citas: 0, // Se calcularía con una consulta adicional
+            ultima_cita: 'Nunca',
+            role: u.role,
+            active: u.active,
+            createdAt: u.createdAt
+        }));
+        renderClientsTable();
+        updateStats();
+    });
+
+    // Escuchar notificaciones
+    const notifRef = ref(db, 'notificaciones');
+    onValue(notifRef, (snapshot) => {
+        const notifs = snapshot.val() || {};
+        notifications = Object.values(notifs).filter(n => !n.leida).sort((a, b) => 
+            new Date(b.fecha || 0) - new Date(a.fecha || 0)
+        );
+        renderNotifications();
+        updateStats();
+    });
+}
+
+// ========== CALENDARIO ==========
 function renderCalendar(month, year) {
     const container = document.getElementById('dynamicCalendar');
     if (!container) return;
@@ -81,11 +123,7 @@ function renderCalendar(month, year) {
 
     for (let d = 1; d <= daysInMonth; d++) {
         const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        // Verificar si hay alguna cita en esa fecha (sin importar el estado)
-        const hasApp = appointments.some(a => {
-            const appDate = toDateStr(a.fecha_preferida);
-            return appDate === dateStr;
-        });
+        const hasApp = appointments.some(a => toDateStr(a.fecha_preferida) === dateStr);
         let classes = 'calendar-day';
         if (d === todayDate && month === todayMonth && year === todayYear) classes += ' today';
         if (hasApp) classes += ' has-event';
@@ -102,14 +140,13 @@ function renderCalendar(month, year) {
 }
 
 // ========== MODAL DE CITAS DEL DÍA ==========
-function onDayClick(dateStr) {
+window.onDayClick = function(dateStr) {
     const dayApps = appointments.filter(a => toDateStr(a.fecha_preferida) === dateStr);
     if (dayApps.length === 0) {
         showAdminNotification('info', 'Sin citas', 'No hay citas programadas para este día.');
         return;
     }
 
-    // Eliminar modal previo
     const existing = document.getElementById('dayAppointmentsModal');
     if (existing) existing.remove();
 
@@ -122,10 +159,7 @@ function onDayClick(dateStr) {
 
     const dateObj = new Date(dateStr + 'T00:00:00');
     const fechaFormateada = dateObj.toLocaleDateString('es-ES', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
     });
 
     let citasHtml = '';
@@ -155,8 +189,8 @@ function onDayClick(dateStr) {
                     ${descripcion}
                 </div>
                 <div class="appointment-actions">
-                    <button class="action-btn edit" title="Editar" onclick="closeDayModal(); editAppointment(${app.id});"><i class="fas fa-edit"></i></button>
-                    <button class="action-btn delete" title="Eliminar" onclick="closeDayModal(); deleteAppointment(${app.id}, this);"><i class="fas fa-times"></i></button>
+                    <button class="action-btn edit" title="Editar" onclick="closeDayModal(); window.editAppointment('${app.id}');"><i class="fas fa-edit"></i></button>
+                    <button class="action-btn delete" title="Eliminar" onclick="closeDayModal(); window.deleteAppointment('${app.id}');"><i class="fas fa-times"></i></button>
                 </div>
             </div>
         `;
@@ -164,13 +198,9 @@ function onDayClick(dateStr) {
 
     modal.innerHTML = `
         <button class="modal-close" onclick="closeDayModal()"><i class="fas fa-times-circle"></i></button>
-        <h2 class="modal-title">
-            <i class="fas fa-calendar-day"></i> ${fechaFormateada}
-        </h2>
+        <h2 class="modal-title"><i class="fas fa-calendar-day"></i> ${fechaFormateada}</h2>
         <p class="modal-subtitle">${dayApps.length} cita${dayApps.length > 1 ? 's' : ''} programada${dayApps.length > 1 ? 's' : ''}</p>
-        <div class="appointments-list">
-            ${citasHtml}
-        </div>
+        <div class="appointments-list">${citasHtml}</div>
         <div class="modal-footer">
             <button class="btn-admin btn-admin-outline" onclick="closeDayModal()">Cerrar</button>
         </div>
@@ -178,16 +208,13 @@ function onDayClick(dateStr) {
 
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) closeDayModal(); });
+};
 
-    overlay.addEventListener('click', function(e) {
-        if (e.target === overlay) closeDayModal();
-    });
-}
-
-function closeDayModal() {
+window.closeDayModal = function() {
     const modal = document.getElementById('dayAppointmentsModal');
     if (modal) modal.remove();
-}
+};
 
 // ========== RENDERIZADO DE TABLAS ==========
 function renderDashboardAppointments() {
@@ -205,8 +232,8 @@ function renderDashboardAppointments() {
             <td>${app.fecha_preferida ? formatDate(app.fecha_preferida) : 'Pendiente'} ${app.hora_preferida || ''}</td>
             <td>${getStatusBadge(app.status || 'pendiente')}</td>
             <td>
-                <button class="action-btn edit" onclick="editAppointment(${app.id})"><i class="fas fa-edit"></i></button>
-                <button class="action-btn delete" onclick="deleteAppointment(${app.id}, this)"><i class="fas fa-times"></i></button>
+                <button class="action-btn edit" onclick="window.editAppointment('${app.id}')"><i class="fas fa-edit"></i></button>
+                <button class="action-btn delete" onclick="window.deleteAppointment('${app.id}')"><i class="fas fa-times"></i></button>
             </td>
         </tr>
     `).join('');
@@ -221,7 +248,7 @@ function renderAppointmentsTable() {
     }
     tbody.innerHTML = appointments.map(app => `
         <tr>
-            <td>#${String(app.id).padStart(3,'0')}</td>
+            <td>#${String(app.id || '').slice(-3).padStart(3,'0')}</td>
             <td><strong>${app.nombre} ${app.apellidos || ''}</strong></td>
             <td>${app.telefono}</td>
             <td>${app.tipo_consulta || 'General'}</td>
@@ -229,9 +256,9 @@ function renderAppointmentsTable() {
             <td>${app.modalidad || 'Presencial'}</td>
             <td>${getStatusBadge(app.status || 'pendiente')}</td>
             <td>
-                <button class="action-btn edit" onclick="editAppointment(${app.id})"><i class="fas fa-edit"></i></button>
-                <button class="action-btn" onclick="viewAppointment(${app.id})"><i class="fas fa-eye"></i></button>
-                <button class="action-btn delete" onclick="deleteAppointment(${app.id}, this)"><i class="fas fa-times"></i></button>
+                <button class="action-btn edit" onclick="window.editAppointment('${app.id}')"><i class="fas fa-edit"></i></button>
+                <button class="action-btn" onclick="window.viewAppointment('${app.id}')"><i class="fas fa-eye"></i></button>
+                <button class="action-btn delete" onclick="window.deleteAppointment('${app.id}')"><i class="fas fa-times"></i></button>
             </td>
         </tr>
     `).join('');
@@ -253,8 +280,8 @@ function renderClientsTable() {
             <td>${c.ultima_cita || 'Nunca'}</td>
             <td>${c.total_citas || 0}</td>
             <td>
-                <button class="action-btn" onclick="viewClient(${c.id})"><i class="fas fa-eye"></i></button>
-                <button class="action-btn edit" onclick="editClient(${c.id})"><i class="fas fa-edit"></i></button>
+                <button class="action-btn" onclick="window.viewClient('${c.id}')"><i class="fas fa-eye"></i></button>
+                <button class="action-btn edit" onclick="window.editClient('${c.id}')"><i class="fas fa-edit"></i></button>
             </td>
         </tr>
     `).join('');
@@ -269,68 +296,77 @@ function renderNotifications() {
     }
     list.innerHTML = notifications.map(n => `
         <div class="notification-item">
-            <div class="notification-icon ${n.type}"><i class="fas ${n.icon}"></i></div>
-            <div class="notification-content"><p><strong>${n.title}:</strong> ${n.message}</p><div class="notification-time">${n.time}</div></div>
-            <button class="action-btn delete" onclick="deleteNotification(${n.id}, this)"><i class="fas fa-times"></i></button>
+            <div class="notification-icon ${n.type || 'appointment'}"><i class="fas ${n.icon || 'fa-bell'}"></i></div>
+            <div class="notification-content"><p><strong>${n.title || 'Notificación'}:</strong> ${n.message}</p><div class="notification-time">${new Date(n.fecha).toLocaleString('es-ES')}</div></div>
+            <button class="action-btn delete" onclick="window.deleteNotification('${n.id}')"><i class="fas fa-times"></i></button>
         </div>
     `).join('');
 }
 
-// ========== ESTADÍSTICAS Y ACTUALIZACIÓN ==========
+// ========== ESTADÍSTICAS ==========
 function updateStats() {
     const today = new Date().toISOString().split('T')[0];
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-    document.getElementById('statWeekAppointments').textContent = appointments.filter(a => a.fecha_envio >= weekAgo).length;
-    document.getElementById('statActiveClients').textContent = clients.length;
-    document.getElementById('statTodayPending').textContent = appointments.filter(a => a.fecha_preferida === today && (a.status === 'pendiente' || !a.status)).length;
-    document.getElementById('statUrgentCases').textContent = appointments.filter(a => a.urgencia === 'urgente' || a.urgencia === 'muy-urgente').length;
+    const statWeek = document.getElementById('statWeekAppointments');
+    const statClients = document.getElementById('statActiveClients');
+    const statPending = document.getElementById('statTodayPending');
+    const statUrgent = document.getElementById('statUrgentCases');
+
+    if (statWeek) statWeek.textContent = appointments.filter(a => (a.fechaCreacion || '').split('T')[0] >= weekAgo).length;
+    if (statClients) statClients.textContent = clients.length;
+    if (statPending) statPending.textContent = appointments.filter(a => a.fecha_preferida === today && (a.status === 'pendiente' || !a.status)).length;
+    if (statUrgent) statUrgent.textContent = appointments.filter(a => a.urgencia === 'urgente' || a.urgencia === 'muy-urgente').length;
 
     const appBadge = document.getElementById('appointmentsBadge');
     const notifBadge = document.getElementById('notificationsBadge');
     const pendingToday = appointments.filter(a => a.fecha_preferida === today && (a.status === 'pendiente' || !a.status)).length;
-    if (appBadge) { appBadge.textContent = pendingToday; appBadge.style.display = pendingToday > 0 ? 'inline-flex' : 'none'; }
-    if (notifBadge) { notifBadge.textContent = notifications.length; notifBadge.style.display = notifications.length > 0 ? 'inline-flex' : 'none'; }
+    
+    if (appBadge) { 
+        appBadge.textContent = pendingToday; 
+        appBadge.style.display = pendingToday > 0 ? 'inline-flex' : 'none'; 
+    }
+    if (notifBadge) { 
+        notifBadge.textContent = notifications.length; 
+        notifBadge.style.display = notifications.length > 0 ? 'inline-flex' : 'none'; 
+    }
 
-    // Refrescar calendario
     renderCalendar(calendarCurrentMonth, calendarCurrentYear);
 }
 
 // ========== CRUD CITAS ==========
-function deleteAppointment(id, btn) {
+window.deleteAppointment = async function(id) {
     if (!confirm('¿Eliminar esta cita?')) return;
-    const index = appointments.findIndex(a => a.id === id);
-    if (index === -1) return;
-    const deleted = appointments[index];
-    appointments.splice(index, 1);
-    saveData();
-    renderDashboardAppointments();
-    renderAppointmentsTable();
-    updateStats();
-    showAdminNotification('success', 'Cita eliminada', `Cita de ${deleted.nombre} eliminada.`);
-}
+    
+    try {
+        await remove(ref(db, 'citas/' + id));
+        showAdminNotification('success', 'Cita eliminada', 'La cita ha sido eliminada correctamente.');
+    } catch (error) {
+        showAdminNotification('error', 'Error', 'No se pudo eliminar la cita.');
+    }
+};
 
-function deleteNotification(id, btn) {
-    const index = notifications.findIndex(n => n.id === id);
-    if (index === -1) return;
-    notifications.splice(index, 1);
-    saveData();
-    renderNotifications();
-    updateStats();
-}
+window.deleteNotification = async function(id) {
+    try {
+        await remove(ref(db, 'notificaciones/' + id));
+    } catch (error) {
+        console.error('Error al eliminar notificación:', error);
+    }
+};
 
 // ========== MODAL DE EDICIÓN ==========
 let editingAppointmentId = null;
 
-function editAppointment(id) {
-    const app = appointments.find(a => a.id === id);
-    if (!app) return;
+window.editAppointment = async function(id) {
+    const snapshot = await get(ref(db, 'citas/' + id));
+    if (!snapshot.exists()) return;
+    
+    const app = snapshot.val();
     editingAppointmentId = id;
     showEditModal(app);
-}
+};
 
 function showEditModal(app) {
-    // Eliminar modal existente
     const existing = document.getElementById('editAppointmentModal');
     if (existing) existing.remove();
 
@@ -347,7 +383,7 @@ function showEditModal(app) {
 
     modal.innerHTML = `
         <button class="modal-close" onclick="closeEditModal()"><i class="fas fa-times-circle"></i></button>
-        <h2 class="modal-title">Editar cita #${String(app.id).padStart(3,'0')}</h2>
+        <h2 class="modal-title">Editar cita</h2>
         <p class="modal-subtitle">Cliente: <strong>${app.nombre} ${app.apellidos || ''}</strong> · ${app.telefono}</p>
 
         <div class="form-group">
@@ -386,10 +422,10 @@ function showEditModal(app) {
 
         <div class="modal-actions">
             <button class="btn-admin btn-admin-outline" onclick="closeEditModal()">Cancelar</button>
-            <button class="btn-admin" style="background:var(--admin-success);color:white;" onclick="acceptAppointment()"><i class="fas fa-check"></i> Aceptar</button>
-            <button class="btn-admin" style="background:var(--admin-warning);color:white;" onclick="reprogramAppointment()"><i class="fas fa-calendar-plus"></i> Reprogramar</button>
-            <button class="btn-admin" style="background:var(--admin-danger);color:white;" onclick="cancelAppointment()"><i class="fas fa-times"></i> Cancelar</button>
-            <button class="btn-admin btn-admin-primary" onclick="saveAppointmentChanges()"><i class="fas fa-save"></i> Guardar</button>
+            <button class="btn-admin" style="background:var(--admin-success);color:white;" onclick="window.acceptAppointment()"><i class="fas fa-check"></i> Aceptar</button>
+            <button class="btn-admin" style="background:var(--admin-warning);color:white;" onclick="window.reprogramAppointment()"><i class="fas fa-calendar-plus"></i> Reprogramar</button>
+            <button class="btn-admin" style="background:var(--admin-danger);color:white;" onclick="window.cancelAppointment()"><i class="fas fa-times"></i> Cancelar</button>
+            <button class="btn-admin btn-admin-primary" onclick="window.saveAppointmentChanges()"><i class="fas fa-save"></i> Guardar</button>
         </div>
     `;
 
@@ -398,11 +434,11 @@ function showEditModal(app) {
     overlay.addEventListener('click', function(e) { if (e.target === overlay) closeEditModal(); });
 }
 
-function closeEditModal() {
+window.closeEditModal = function() {
     const modal = document.getElementById('editAppointmentModal');
     if (modal) modal.remove();
     editingAppointmentId = null;
-}
+};
 
 function getModalData() {
     return {
@@ -415,97 +451,101 @@ function getModalData() {
     };
 }
 
-function saveAppointmentChanges() {
+window.saveAppointmentChanges = async function() {
     if (editingAppointmentId === null) return;
-    const app = appointments.find(a => a.id === editingAppointmentId);
-    if (!app) return;
+    
     const data = getModalData();
-    Object.assign(app, {
-        status: data.status,
-        modalidad: data.modalidad,
-        fecha_preferida: data.fecha,
-        hora_preferida: data.hora,
-        nota_interna: data.nota,
-        mensaje_cliente: data.mensaje
-    });
-    saveData();
-    closeEditModal();
-    renderDashboardAppointments();
-    renderAppointmentsTable();
-    updateStats();
-    notifications.unshift({ id: Date.now() + Math.random(), type: 'appointment', icon: 'fa-edit', title: 'Cita actualizada', message: `Cita de ${app.nombre} actualizada.`, time: 'Ahora mismo' });
-    saveData();
-    renderNotifications();
-    showAdminNotification('success', 'Cita actualizada', `Cita de ${app.nombre} guardada.`);
-}
+    try {
+        await update(ref(db, 'citas/' + editingAppointmentId), {
+            status: data.status,
+            modalidad: data.modalidad,
+            fecha_preferida: data.fecha,
+            hora_preferida: data.hora,
+            nota_interna: data.nota,
+            mensaje_cliente: data.mensaje,
+            fechaActualizacion: new Date().toISOString()
+        });
+        
+        closeEditModal();
+        showAdminNotification('success', 'Cita actualizada', 'Los cambios han sido guardados.');
+    } catch (error) {
+        showAdminNotification('error', 'Error', 'No se pudieron guardar los cambios.');
+    }
+};
 
-function acceptAppointment() {
+window.acceptAppointment = async function() {
     if (editingAppointmentId === null) return;
-    const app = appointments.find(a => a.id === editingAppointmentId);
-    if (!app) return;
-    app.status = 'confirmada';
-    if (!app.mensaje_cliente) app.mensaje_cliente = `Su cita ha sido confirmada para el ${formatDate(app.fecha_preferida)} a las ${app.hora_preferida || 'hora convenida'}.`;
-    saveData();
-    closeEditModal();
-    renderDashboardAppointments();
-    renderAppointmentsTable();
-    updateStats();
-    showAdminNotification('success', 'Cita aceptada', `Cita de ${app.nombre} confirmada.`);
-}
+    
+    try {
+        await update(ref(db, 'citas/' + editingAppointmentId), {
+            status: 'confirmada',
+            fechaActualizacion: new Date().toISOString()
+        });
+        
+        closeEditModal();
+        showAdminNotification('success', 'Cita aceptada', 'La cita ha sido confirmada.');
+    } catch (error) {
+        showAdminNotification('error', 'Error', 'No se pudo confirmar la cita.');
+    }
+};
 
-function reprogramAppointment() {
+window.reprogramAppointment = async function() {
     if (editingAppointmentId === null) return;
-    const app = appointments.find(a => a.id === editingAppointmentId);
-    if (!app) return;
+    
     const data = getModalData();
-    app.status = 'pendiente';
-    app.fecha_preferida = data.fecha;
-    app.hora_preferida = data.hora;
-    app.modalidad = data.modalidad;
-    app.nota_interna = data.nota;
-    app.mensaje_cliente = data.mensaje || `Hemos reprogramado su cita para el ${formatDate(data.fecha)} a las ${data.hora}.`;
-    saveData();
-    closeEditModal();
-    renderDashboardAppointments();
-    renderAppointmentsTable();
-    updateStats();
-    showAdminNotification('warning', 'Cita reprogramada', `Cita de ${app.nombre} reprogramada.`);
-    // Abrir mail
-    const asunto = encodeURIComponent('Su cita ha sido reprogramada');
-    const cuerpo = encodeURIComponent(`Estimado/a ${app.nombre},\n\nSu cita ha sido reprogramada para el ${formatDate(data.fecha)} a las ${data.hora}.\n\n${app.mensaje_cliente}\n\nAtentamente,\nAyala Abogados`);
-    window.location.href = `mailto:${app.email}?subject=${asunto}&body=${cuerpo}`;
-}
+    try {
+        await update(ref(db, 'citas/' + editingAppointmentId), {
+            status: 'pendiente',
+            fecha_preferida: data.fecha,
+            hora_preferida: data.hora,
+            modalidad: data.modalidad,
+            nota_interna: data.nota,
+            mensaje_cliente: data.mensaje || `Hemos reprogramado su cita para el ${formatDate(data.fecha)} a las ${data.hora}.`,
+            fechaActualizacion: new Date().toISOString()
+        });
+        
+        closeEditModal();
+        showAdminNotification('warning', 'Cita reprogramada', 'La cita ha sido reprogramada.');
+    } catch (error) {
+        showAdminNotification('error', 'Error', 'No se pudo reprogramar la cita.');
+    }
+};
 
-function cancelAppointment() {
+window.cancelAppointment = async function() {
     if (editingAppointmentId === null) return;
-    const app = appointments.find(a => a.id === editingAppointmentId);
-    if (!app) return;
-    if (!confirm(`¿Cancelar cita de ${app.nombre}?`)) return;
-    app.status = 'cancelada';
-    if (!app.mensaje_cliente) app.mensaje_cliente = 'Su cita ha sido cancelada.';
-    saveData();
-    closeEditModal();
-    renderDashboardAppointments();
-    renderAppointmentsTable();
-    updateStats();
-    showAdminNotification('danger', 'Cita cancelada', `Cita de ${app.nombre} cancelada.`);
-}
+    
+    if (!confirm('¿Cancelar esta cita?')) return;
+    
+    try {
+        await update(ref(db, 'citas/' + editingAppointmentId), {
+            status: 'cancelada',
+            fechaActualizacion: new Date().toISOString()
+        });
+        
+        closeEditModal();
+        showAdminNotification('danger', 'Cita cancelada', 'La cita ha sido cancelada.');
+    } catch (error) {
+        showAdminNotification('error', 'Error', 'No se pudo cancelar la cita.');
+    }
+};
 
-function viewAppointment(id) {
-    const app = appointments.find(a => a.id === id);
-    if (!app) return;
+window.viewAppointment = async function(id) {
+    const snapshot = await get(ref(db, 'citas/' + id));
+    if (!snapshot.exists()) return;
+    
+    const app = snapshot.val();
     alert(`Cita #${id}\nCliente: ${app.nombre}\nTeléfono: ${app.telefono}\nServicio: ${app.tipo_consulta}\nFecha: ${formatDate(app.fecha_preferida)} ${app.hora_preferida || ''}\nEstado: ${app.status}`);
-}
+};
 
-function viewClient(id) {
+window.viewClient = function(id) {
     const c = clients.find(c => c.id === id);
     if (!c) return;
-    alert(`Cliente: ${c.nombre} ${c.apellidos || ''}\nDNI: ${c.dni}\nTeléfono: ${c.telefono}\nEmail: ${c.email}\nTotal citas: ${c.total_citas}`);
-}
+    alert(`Cliente: ${c.nombre} ${c.apellidos || ''}\nDNI: ${c.dni}\nTeléfono: ${c.telefono}\nEmail: ${c.email}`);
+};
 
-function editClient(id) {
+window.editClient = function(id) {
     alert('Función de edición de cliente en desarrollo.');
-}
+};
 
 // ========== NOTIFICACIÓN ADMIN ==========
 function showAdminNotification(type, title, message) {
@@ -531,57 +571,23 @@ function showAdminNotification(type, title, message) {
     }, 5000);
 }
 
-// ========== SINCRONIZACIÓN CON FORMULARIO ==========
-function checkForNewAppointments() {
-    const pending = JSON.parse(localStorage.getItem('pending_appointments') || '[]');
-    if (pending.length === 0) return;
-    pending.forEach(app => {
-        // Asegurar que la fecha tenga formato YYYY-MM-DD
-        if (app.fecha_preferida) {
-            const d = new Date(app.fecha_preferida);
-            if (!isNaN(d)) {
-                app.fecha_preferida = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-            }
-        }
-        const newApp = { id: generateId(), ...app, status: 'pendiente', fecha_recepcion: new Date().toISOString() };
-        appointments.unshift(newApp);
-        const existing = clients.find(c => c.email === app.email);
-        if (existing) {
-            existing.total_citas = (existing.total_citas || 0) + 1;
-            existing.ultima_cita = new Date().toLocaleDateString('es-ES');
-        } else {
-            clients.unshift({ id: generateId(), nombre: app.nombre, apellidos: app.apellidos || '', dni: app.dni || 'N/D', telefono: app.telefono, email: app.email, total_citas: 1, ultima_cita: new Date().toLocaleDateString('es-ES') });
-        }
-        notifications.unshift({ id: Date.now() + Math.random(), type: 'appointment', icon: 'fa-calendar-check', title: 'Nueva cita', message: `${app.nombre} ha solicitado cita.`, time: 'Ahora mismo' });
-    });
-    localStorage.removeItem('pending_appointments');
-    saveData();
-    renderDashboardAppointments();
-    renderAppointmentsTable();
-    renderClientsTable();
-    renderNotifications();
-    updateStats();
-    showAdminNotification('success', 'Nuevas citas', `Se recibieron ${pending.length} solicitud(es).`);
-}
-
 // ========== DOM READY ==========
 document.addEventListener('DOMContentLoaded', function() {
-
-    // Inicializar calendario
     renderCalendar(calendarCurrentMonth, calendarCurrentYear);
 
-    // Eventos de navegación
-    document.getElementById('calendarPrev').addEventListener('click', function() {
+    document.getElementById('calendarPrev')?.addEventListener('click', function() {
         if (calendarCurrentMonth === 0) { calendarCurrentMonth = 11; calendarCurrentYear--; }
         else calendarCurrentMonth--;
         renderCalendar(calendarCurrentMonth, calendarCurrentYear);
     });
-    document.getElementById('calendarNext').addEventListener('click', function() {
+    
+    document.getElementById('calendarNext')?.addEventListener('click', function() {
         if (calendarCurrentMonth === 11) { calendarCurrentMonth = 0; calendarCurrentYear++; }
         else calendarCurrentMonth++;
         renderCalendar(calendarCurrentMonth, calendarCurrentYear);
     });
-    document.getElementById('calendarToday').addEventListener('click', function() {
+    
+    document.getElementById('calendarToday')?.addEventListener('click', function() {
         const today = new Date();
         calendarCurrentMonth = today.getMonth();
         calendarCurrentYear = today.getFullYear();
@@ -593,11 +599,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const html = document.documentElement;
     const savedTheme = localStorage.getItem('admin-theme');
     const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
     if (savedTheme === 'dark' || (!savedTheme && systemDark)) {
         html.setAttribute('data-theme', 'dark');
-        themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        if (themeToggle) themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
     }
-    themeToggle.addEventListener('click', function() {
+    
+    themeToggle?.addEventListener('click', function() {
         const isDark = html.getAttribute('data-theme') === 'dark';
         if (isDark) {
             html.removeAttribute('data-theme');
@@ -613,65 +621,66 @@ document.addEventListener('DOMContentLoaded', function() {
     // Sidebar toggle
     const sidebar = document.getElementById('sidebar');
     const sidebarToggle = document.getElementById('sidebarToggle');
-    if (sidebarToggle) {
-        sidebarToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('collapsed');
-            const icon = this.querySelector('i');
-            if (sidebar.classList.contains('collapsed')) {
-                icon.classList.remove('fa-chevron-left');
-                icon.classList.add('fa-chevron-right');
-            } else {
-                icon.classList.remove('fa-chevron-right');
-                icon.classList.add('fa-chevron-left');
-            }
-        });
-    }
+    
+    sidebarToggle?.addEventListener('click', function() {
+        sidebar?.classList.toggle('collapsed');
+        const icon = this.querySelector('i');
+        if (sidebar?.classList.contains('collapsed')) {
+            icon?.classList.remove('fa-chevron-left');
+            icon?.classList.add('fa-chevron-right');
+        } else {
+            icon?.classList.remove('fa-chevron-right');
+            icon?.classList.add('fa-chevron-left');
+        }
+    });
 
     // Navegación entre páginas
     const navItems = document.querySelectorAll('.nav-item');
     const pageTitle = document.getElementById('pageTitle');
-    const pageTitles = { dashboard:'Panel Principal', appointments:'Citas', clients:'Clientes', reports:'Informes', notifications:'Notificaciones', content:'Contenido Web', settings:'Configuración' };
+    const pageTitles = { 
+        dashboard:'Panel Principal', 
+        appointments:'Citas', 
+        clients:'Clientes', 
+        reports:'Informes', 
+        notifications:'Notificaciones', 
+        content:'Contenido Web', 
+        settings:'Configuración' 
+    };
+    
     navItems.forEach(item => {
         item.addEventListener('click', function() {
             const page = this.getAttribute('data-page');
-            showPage(page);
+            window.showPage(page);
         });
     });
+    
     window.showPage = function(page) {
         navItems.forEach(i => i.classList.remove('active'));
         document.querySelector(`.nav-item[data-page="${page}"]`)?.classList.add('active');
         document.querySelectorAll('.page-section').forEach(s => s.style.display = 'none');
         document.getElementById('page-'+page).style.display = 'block';
-        pageTitle.textContent = pageTitles[page] || 'Panel Principal';
-        sidebar.classList.remove('mobile-open');
+        if (pageTitle) pageTitle.textContent = pageTitles[page] || 'Panel Principal';
+        sidebar?.classList.remove('mobile-open');
     };
 
     // Menú móvil
     const mobileBtn = document.getElementById('mobileMenuBtn');
     if (mobileBtn) {
         mobileBtn.style.display = window.innerWidth <= 768 ? 'block' : 'none';
-        mobileBtn.addEventListener('click', () => sidebar.classList.toggle('mobile-open'));
+        mobileBtn.addEventListener('click', () => sidebar?.classList.toggle('mobile-open'));
         window.addEventListener('resize', function() {
             mobileBtn.style.display = window.innerWidth <= 768 ? 'block' : 'none';
-            if (window.innerWidth > 768) sidebar.classList.remove('mobile-open');
+            if (window.innerWidth > 768) sidebar?.classList.remove('mobile-open');
         });
     }
 
-    // Render inicial
-    renderDashboardAppointments();
-    renderAppointmentsTable();
-    renderClientsTable();
-    renderNotifications();
-    updateStats();
-
-    // Verificar nuevas citas cada 5 segundos
-    checkForNewAppointments();
-    setInterval(checkForNewAppointments, 5000);
+    // Iniciar sincronización con Firebase
+    syncWithFirebase();
 
     // Botones "Nueva Cita" y "Nuevo Cliente"
     document.querySelectorAll('.btn-admin-primary').forEach(btn => {
         if (btn.textContent.includes('Nueva Cita')) {
-            btn.addEventListener('click', function() {
+            btn.addEventListener('click', async function() {
                 const nombre = prompt('Nombre:');
                 if (!nombre) return;
                 const apellidos = prompt('Apellidos:');
@@ -679,34 +688,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 const email = prompt('Email:');
                 const tipo = prompt('Tipo de consulta:');
                 if (!telefono || !email) return showAdminNotification('error', 'Error', 'Teléfono y email requeridos.');
+                
                 const fechaPreferida = new Date().toISOString().split('T')[0];
-                const newApp = { id: generateId(), nombre, apellidos: apellidos || '', telefono, email, tipo_consulta: tipo || 'General', modalidad: 'Presencial', status: 'pendiente', fecha_envio: new Date().toISOString(), fecha_preferida: fechaPreferida };
-                appointments.unshift(newApp);
-                if (!clients.find(c => c.email === email)) {
-                    clients.unshift({ id: generateId(), nombre, apellidos: apellidos || '', dni: 'N/D', telefono, email, total_citas: 1, ultima_cita: new Date().toLocaleDateString('es-ES') });
+                const newApp = {
+                    nombre, 
+                    apellidos: apellidos || '', 
+                    telefono, 
+                    email, 
+                    tipo_consulta: tipo || 'General', 
+                    modalidad: 'Presencial', 
+                    fecha_preferida: fechaPreferida,
+                    usuarioId: window.AuthService?.getCurrentSession()?.userId || 'admin'
+                };
+                
+                const result = await window.AppointmentService.createAppointment(newApp);
+                if (result.success) {
+                    showAdminNotification('success', 'Cita añadida', `Cita para ${nombre} añadida.`);
+                } else {
+                    showAdminNotification('error', 'Error', result.error);
                 }
-                saveData();
-                renderDashboardAppointments();
-                renderAppointmentsTable();
-                renderClientsTable();
-                updateStats();
-                showAdminNotification('success', 'Cita añadida', `Cita para ${nombre} añadida.`);
             });
         }
         if (btn.textContent.includes('Nuevo Cliente')) {
             btn.addEventListener('click', function() {
-                const nombre = prompt('Nombre:');
-                if (!nombre) return;
-                const apellidos = prompt('Apellidos:');
-                const dni = prompt('DNI:');
-                const telefono = prompt('Teléfono:');
-                const email = prompt('Email:');
-                if (!telefono || !email) return showAdminNotification('error', 'Error', 'Teléfono y email requeridos.');
-                clients.unshift({ id: generateId(), nombre, apellidos: apellidos || '', dni: dni || 'N/D', telefono, email, total_citas: 0, ultima_cita: 'Nunca' });
-                saveData();
-                renderClientsTable();
-                updateStats();
-                showAdminNotification('success', 'Cliente añadido', `${nombre} añadido.`);
+                alert('Use el formulario de registro público o cree el usuario desde Firebase Console.');
             });
         }
     });
@@ -716,7 +721,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (btn.textContent.includes('Exportar') || btn.textContent.includes('PDF')) {
             btn.addEventListener('click', function() {
                 if (appointments.length === 0) return showAdminNotification('warning', 'Sin datos', 'No hay citas.');
-                let report = 'INFORME DE CITAS\n';
+                let report = 'INFORME DE CITAS - AYALA ABOGADOS\n';
+                report += `Generado: ${new Date().toLocaleString('es-ES')}\n`;
+                report += '========================================\n\n';
                 appointments.forEach(a => {
                     report += `ID: #${a.id} | ${a.nombre} ${a.apellidos || ''} | ${a.telefono} | ${a.tipo_consulta} | ${formatDate(a.fecha_preferida)} ${a.hora_preferida || ''} | ${a.status}\n`;
                 });
@@ -727,23 +734,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 a.download = `informe_${new Date().toISOString().slice(0,10)}.txt`;
                 a.click();
                 URL.revokeObjectURL(url);
-                showAdminNotification('success', 'Informe generado', 'Descargado.');
+                showAdminNotification('success', 'Informe generado', 'Descargado correctamente.');
             });
         }
     });
 
-    // Guardar configuración (simulado)
-    document.querySelectorAll('.btn-admin-primary').forEach(btn => {
-        if (btn.textContent.includes('Guardar')) {
-            btn.addEventListener('click', function() {
-                const orig = this.innerHTML;
-                this.innerHTML = '<i class="fas fa-check"></i> Guardado';
-                this.style.background = 'var(--admin-success)';
-                setTimeout(() => { this.innerHTML = orig; this.style.background = ''; }, 2000);
-                showAdminNotification('success', 'Configuración', 'Guardada correctamente.');
-            });
-        }
-    });
-
-    console.log('✅ Admin panel cargado correctamente.');
+    console.log('✅ Admin panel (Firebase) cargado correctamente.');
 });
