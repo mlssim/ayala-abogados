@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="../css/admin.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
     <style>
         .logo-img {
@@ -89,7 +89,7 @@
 <body>
     <div class="login-page">
         <div class="login-card">
-            <img src="images/logo.jpeg" alt="Ayala Abogados - Logo" class="logo-img">
+            <img src="../images/logo.jpeg" alt="Ayala Abogados - Logo" class="logo-img">
             <h1 class="login-title">Ayala Abogados</h1>
             <p class="login-subtitle">Panel de Administración</p>
 
@@ -116,7 +116,7 @@
             </form>
 
             <div class="login-footer">
-                <p><a href="index.html" style="color: var(--admin-text-muted);"><i class="fas fa-arrow-left"></i> Volver al sitio web</a></p>
+                <p><a href="../index.html" style="color: var(--admin-text-muted);"><i class="fas fa-arrow-left"></i> Volver al sitio web</a></p>
                 <p style="margin-top: 16px; font-size: 0.75rem; color: var(--admin-text-muted);">
                     Admin por defecto: admin@ayalaabogados.es / Admin123!
                 </p>
@@ -124,7 +124,7 @@
         </div>
     </div>
 
-    <!-- Firebase Scripts -->
+    <!-- Firebase Scripts - admin/login.html → ../js/ -->
     <script type="module">
         import { auth } from '../js/firebase-config.js';
         import { signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -149,7 +149,7 @@
             try {
                 await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
                 const credential = await signInWithEmailAndPassword(auth, email, password);
-                
+
                 // Verificar si es admin
                 const adminSnap = await get(ref(db, `administradores/${credential.user.uid}`));
                 if (!adminSnap.exists() || !adminSnap.val().activo) {
@@ -173,7 +173,9 @@
                 if (error.code === 'auth/user-not-found') msg = 'No existe una cuenta con este email.';
                 if (error.code === 'auth/wrong-password') msg = 'Contraseña incorrecta.';
                 if (error.code === 'auth/too-many-requests') msg = 'Demasiados intentos. Inténtelo más tarde.';
-                
+                if (error.code === 'auth/invalid-credential') msg = 'Credenciales inválidas. Verifique email y contraseña.';
+                if (error.code === 'auth/network-request-failed') msg = 'Error de conexión. Verifique su internet.';
+
                 errorDiv.textContent = msg;
                 errorDiv.classList.add('visible');
                 btn.classList.remove('loading');

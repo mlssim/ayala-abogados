@@ -3,7 +3,8 @@
    Con calendario interactivo y sincronización en tiempo real
    ============================================ */
 
-import { db } from './firebase-config.js';
+// admin/js/admin.js → ../../js/firebase-config.js (sube 2 niveles: admin/js → admin → raíz → js/)
+import { db } from '../../js/firebase-config.js';
 import { 
     ref, 
     onValue, 
@@ -54,7 +55,7 @@ function syncWithFirebase() {
         appointments = Object.values(citas).sort((a, b) => 
             new Date(b.fechaCreacion || 0) - new Date(a.fechaCreacion || 0)
         );
-        
+
         renderDashboardAppointments();
         renderAppointmentsTable();
         updateStats();
@@ -72,7 +73,7 @@ function syncWithFirebase() {
             dni: u.dni || 'N/D',
             telefono: u.telefono || '',
             email: u.email,
-            total_citas: 0, // Se calcularía con una consulta adicional
+            total_citas: 0,
             ultima_cita: 'Nunca',
             role: u.role,
             active: u.active,
@@ -321,7 +322,7 @@ function updateStats() {
     const appBadge = document.getElementById('appointmentsBadge');
     const notifBadge = document.getElementById('notificationsBadge');
     const pendingToday = appointments.filter(a => a.fecha_preferida === today && (a.status === 'pendiente' || !a.status)).length;
-    
+
     if (appBadge) { 
         appBadge.textContent = pendingToday; 
         appBadge.style.display = pendingToday > 0 ? 'inline-flex' : 'none'; 
@@ -337,7 +338,7 @@ function updateStats() {
 // ========== CRUD CITAS ==========
 window.deleteAppointment = async function(id) {
     if (!confirm('¿Eliminar esta cita?')) return;
-    
+
     try {
         await remove(ref(db, 'citas/' + id));
         showAdminNotification('success', 'Cita eliminada', 'La cita ha sido eliminada correctamente.');
@@ -360,7 +361,7 @@ let editingAppointmentId = null;
 window.editAppointment = async function(id) {
     const snapshot = await get(ref(db, 'citas/' + id));
     if (!snapshot.exists()) return;
-    
+
     const app = snapshot.val();
     editingAppointmentId = id;
     showEditModal(app);
@@ -453,7 +454,7 @@ function getModalData() {
 
 window.saveAppointmentChanges = async function() {
     if (editingAppointmentId === null) return;
-    
+
     const data = getModalData();
     try {
         await update(ref(db, 'citas/' + editingAppointmentId), {
@@ -465,7 +466,7 @@ window.saveAppointmentChanges = async function() {
             mensaje_cliente: data.mensaje,
             fechaActualizacion: new Date().toISOString()
         });
-        
+
         closeEditModal();
         showAdminNotification('success', 'Cita actualizada', 'Los cambios han sido guardados.');
     } catch (error) {
@@ -475,13 +476,13 @@ window.saveAppointmentChanges = async function() {
 
 window.acceptAppointment = async function() {
     if (editingAppointmentId === null) return;
-    
+
     try {
         await update(ref(db, 'citas/' + editingAppointmentId), {
             status: 'confirmada',
             fechaActualizacion: new Date().toISOString()
         });
-        
+
         closeEditModal();
         showAdminNotification('success', 'Cita aceptada', 'La cita ha sido confirmada.');
     } catch (error) {
@@ -491,7 +492,7 @@ window.acceptAppointment = async function() {
 
 window.reprogramAppointment = async function() {
     if (editingAppointmentId === null) return;
-    
+
     const data = getModalData();
     try {
         await update(ref(db, 'citas/' + editingAppointmentId), {
@@ -503,7 +504,7 @@ window.reprogramAppointment = async function() {
             mensaje_cliente: data.mensaje || `Hemos reprogramado su cita para el ${formatDate(data.fecha)} a las ${data.hora}.`,
             fechaActualizacion: new Date().toISOString()
         });
-        
+
         closeEditModal();
         showAdminNotification('warning', 'Cita reprogramada', 'La cita ha sido reprogramada.');
     } catch (error) {
@@ -513,15 +514,15 @@ window.reprogramAppointment = async function() {
 
 window.cancelAppointment = async function() {
     if (editingAppointmentId === null) return;
-    
+
     if (!confirm('¿Cancelar esta cita?')) return;
-    
+
     try {
         await update(ref(db, 'citas/' + editingAppointmentId), {
             status: 'cancelada',
             fechaActualizacion: new Date().toISOString()
         });
-        
+
         closeEditModal();
         showAdminNotification('danger', 'Cita cancelada', 'La cita ha sido cancelada.');
     } catch (error) {
@@ -532,7 +533,7 @@ window.cancelAppointment = async function() {
 window.viewAppointment = async function(id) {
     const snapshot = await get(ref(db, 'citas/' + id));
     if (!snapshot.exists()) return;
-    
+
     const app = snapshot.val();
     alert(`Cita #${id}\nCliente: ${app.nombre}\nTeléfono: ${app.telefono}\nServicio: ${app.tipo_consulta}\nFecha: ${formatDate(app.fecha_preferida)} ${app.hora_preferida || ''}\nEstado: ${app.status}`);
 };
@@ -580,13 +581,13 @@ document.addEventListener('DOMContentLoaded', function() {
         else calendarCurrentMonth--;
         renderCalendar(calendarCurrentMonth, calendarCurrentYear);
     });
-    
+
     document.getElementById('calendarNext')?.addEventListener('click', function() {
         if (calendarCurrentMonth === 11) { calendarCurrentMonth = 0; calendarCurrentYear++; }
         else calendarCurrentMonth++;
         renderCalendar(calendarCurrentMonth, calendarCurrentYear);
     });
-    
+
     document.getElementById('calendarToday')?.addEventListener('click', function() {
         const today = new Date();
         calendarCurrentMonth = today.getMonth();
@@ -599,12 +600,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const html = document.documentElement;
     const savedTheme = localStorage.getItem('admin-theme');
     const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
+
     if (savedTheme === 'dark' || (!savedTheme && systemDark)) {
         html.setAttribute('data-theme', 'dark');
         if (themeToggle) themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
     }
-    
+
     themeToggle?.addEventListener('click', function() {
         const isDark = html.getAttribute('data-theme') === 'dark';
         if (isDark) {
@@ -621,7 +622,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Sidebar toggle
     const sidebar = document.getElementById('sidebar');
     const sidebarToggle = document.getElementById('sidebarToggle');
-    
+
     sidebarToggle?.addEventListener('click', function() {
         sidebar?.classList.toggle('collapsed');
         const icon = this.querySelector('i');
@@ -646,14 +647,14 @@ document.addEventListener('DOMContentLoaded', function() {
         content:'Contenido Web', 
         settings:'Configuración' 
     };
-    
+
     navItems.forEach(item => {
         item.addEventListener('click', function() {
             const page = this.getAttribute('data-page');
             window.showPage(page);
         });
     });
-    
+
     window.showPage = function(page) {
         navItems.forEach(i => i.classList.remove('active'));
         document.querySelector(`.nav-item[data-page="${page}"]`)?.classList.add('active');
@@ -688,7 +689,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const email = prompt('Email:');
                 const tipo = prompt('Tipo de consulta:');
                 if (!telefono || !email) return showAdminNotification('error', 'Error', 'Teléfono y email requeridos.');
-                
+
                 const fechaPreferida = new Date().toISOString().split('T')[0];
                 const newApp = {
                     nombre, 
@@ -700,7 +701,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     fecha_preferida: fechaPreferida,
                     usuarioId: window.AuthService?.getCurrentSession()?.userId || 'admin'
                 };
-                
+
                 const result = await window.AppointmentService.createAppointment(newApp);
                 if (result.success) {
                     showAdminNotification('success', 'Cita añadida', `Cita para ${nombre} añadida.`);

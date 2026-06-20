@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="../css/admin.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
     <style>
         .logo-img {
@@ -23,7 +23,7 @@
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <img src="images/logo.jpeg" alt="Ayala Abogados - Logo" class="logo-img" style="height: 35px;">
+            <img src="../images/logo.jpeg" alt="Ayala Abogados - Logo" class="logo-img" style="height: 35px;">
             <div class="sidebar-title">Ayala Abogados</div>
         </div>
 
@@ -533,7 +533,7 @@
         </div>
     </main>
 
-    <!-- Scripts Firebase -->
+    <!-- Scripts Firebase - admin/admin-index.html → ../js/ -->
     <script type="module" src="../js/firebase-config.js"></script>
     <script type="module" src="../js/firebase-service.js"></script>
     <script type="module" src="../js/auth-service.js"></script>
@@ -556,14 +556,14 @@
             const adminSnap = await get(ref(db, `administradores/${user.uid}`));
             if (!adminSnap.exists() || !adminSnap.val().activo) {
                 alert('Acceso denegado. Se requieren privilegios de administrador.');
-                window.location.href = '../pages/perfil.html';
+                window.location.href = '../index.html';
                 return;
             }
 
             // Actualizar info del usuario en la barra superior
             const userSnap = await get(ref(db, `usuarios/${user.uid}`));
             const userData = userSnap.val() || {};
-            
+
             document.getElementById('topBarName').textContent = `${userData.nombre} ${userData.apellidos || ''}`;
             document.getElementById('topBarAvatar').textContent = 
                 `${(userData.nombre?.charAt(0) || 'A')}${(userData.apellidos?.charAt(0) || 'D')}`;
