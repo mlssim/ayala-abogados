@@ -10,12 +10,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="css/admin.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
+    <style>
+        .logo-img {
+            height: 40px;
+            width: auto;
+            border-radius: var(--radius-sm);
+            object-fit: contain;
+        }
+    </style>
 </head>
 <body>
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <div class="sidebar-logo"><i class="fas fa-balance-scale"></i></div>
+            <img src="images/logo.jpeg" alt="Ayala Abogados - Logo" class="logo-img" style="height: 35px;">
             <div class="sidebar-title">Ayala Abogados</div>
         </div>
 
@@ -143,7 +151,7 @@
                                         <td colspan="5" style="text-align: center; padding: 40px; color: var(--admin-text-muted);">
                                             <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 12px; display: block;"></i>
                                             No hay citas registradas<br>
-                                            <span style="font-size: 0.85rem;">Las citas enviadas desde el formulario web aparecerán aquí</span>
+                                            <span style="font-size: 0.85rem;">Las citas aparecerán aquí automáticamente desde Firebase</span>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -156,55 +164,15 @@
                         <!-- Calendar -->
                         <div class="content-card">
                             <div class="content-card-header">
-                                <div class="content-card-title"><i class="fas fa-calendar" style="margin-right: 8px; color: var(--admin-primary);"></i>Junio 2026</div>
+                                <div class="content-card-title"><i class="fas fa-calendar" style="margin-right: 8px; color: var(--admin-primary);"></i><span id="calendarMonthTitle">Cargando...</span></div>
+                                <div style="display:flex;gap:4px;">
+                                    <button id="calendarPrev" class="btn-admin btn-admin-outline" style="padding:2px 10px;font-size:0.8rem;"><i class="fas fa-chevron-left"></i></button>
+                                    <button id="calendarNext" class="btn-admin btn-admin-outline" style="padding:2px 10px;font-size:0.8rem;"><i class="fas fa-chevron-right"></i></button>
+                                    <button id="calendarToday" class="btn-admin btn-admin-outline" style="padding:2px 10px;font-size:0.7rem;">Hoy</button>
+                                </div>
                             </div>
                             <div class="content-card-body">
-                                <div class="calendar-widget">
-                                    <div class="calendar-header">L</div>
-                                    <div class="calendar-header">M</div>
-                                    <div class="calendar-header">X</div>
-                                    <div class="calendar-header">J</div>
-                                    <div class="calendar-header">V</div>
-                                    <div class="calendar-header">S</div>
-                                    <div class="calendar-header">D</div>
-
-                                    <div class="calendar-day other-month">26</div>
-                                    <div class="calendar-day other-month">27</div>
-                                    <div class="calendar-day other-month">28</div>
-                                    <div class="calendar-day other-month">29</div>
-                                    <div class="calendar-day other-month">30</div>
-                                    <div class="calendar-day other-month">31</div>
-                                    <div class="calendar-day">1</div>
-                                    <div class="calendar-day">2</div>
-                                    <div class="calendar-day">3</div>
-                                    <div class="calendar-day">4</div>
-                                    <div class="calendar-day">5</div>
-                                    <div class="calendar-day">6</div>
-                                    <div class="calendar-day">7</div>
-                                    <div class="calendar-day today has-event">8</div>
-                                    <div class="calendar-day has-event">9</div>
-                                    <div class="calendar-day has-event">10</div>
-                                    <div class="calendar-day">11</div>
-                                    <div class="calendar-day has-event">12</div>
-                                    <div class="calendar-day">13</div>
-                                    <div class="calendar-day">14</div>
-                                    <div class="calendar-day has-event">15</div>
-                                    <div class="calendar-day">16</div>
-                                    <div class="calendar-day has-event">17</div>
-                                    <div class="calendar-day">18</div>
-                                    <div class="calendar-day">19</div>
-                                    <div class="calendar-day">20</div>
-                                    <div class="calendar-day">21</div>
-                                    <div class="calendar-day">22</div>
-                                    <div class="calendar-day">23</div>
-                                    <div class="calendar-day">24</div>
-                                    <div class="calendar-day">25</div>
-                                    <div class="calendar-day">26</div>
-                                    <div class="calendar-day">27</div>
-                                    <div class="calendar-day">28</div>
-                                    <div class="calendar-day">29</div>
-                                    <div class="calendar-day">30</div>
-                                </div>
+                                <div class="calendar-widget" id="dynamicCalendar"></div>
                             </div>
                         </div>
 
@@ -249,14 +217,14 @@
                 <div class="content-card" style="margin-top: 24px;">
                     <div class="content-card-header">
                         <div class="content-card-title"><i class="fas fa-bell" style="margin-right: 8px; color: var(--admin-primary);"></i>Notificaciones Recientes</div>
-                        <span style="font-size: 0.8rem; color: var(--admin-text-muted);">Hoy, 8 de junio de 2026</span>
+                        <span style="font-size: 0.8rem; color: var(--admin-text-muted);">Firebase Realtime</span>
                     </div>
                     <div class="content-card-body">
                         <div id="notificationsList">
                             <div class="notification-item" style="text-align: center; padding: 40px 20px; color: var(--admin-text-muted);">
-                                <i class="fas fa-bell-slash" style="font-size: 2rem; margin-bottom: 12px; display: block; opacity: 0.5;"></i>
+                                <i class="fas fa-bell-slash" style="font-size: 2rem; display: block; margin-bottom: 12px; opacity: 0.5;"></i>
                                 No hay notificaciones pendientes<br>
-                                <span style="font-size: 0.85rem;">Las notificaciones aparecerán cuando reciba nuevas solicitudes de cita</span>
+                                <span style="font-size: 0.85rem;">Las notificaciones se sincronizan en tiempo real desde Firebase</span>
                             </div>
                         </div>
                     </div>
@@ -311,10 +279,10 @@
                             <tbody id="appointmentsTableBody">
                                 <tr class="empty-state">
                                     <td colspan="8" style="text-align: center; padding: 60px 20px; color: var(--admin-text-muted);">
-                                        <i class="fas fa-calendar-plus" style="font-size: 3rem; margin-bottom: 16px; display: block; opacity: 0.5;"></i>
+                                        <i class="fas fa-calendar-plus" style="font-size: 3rem; display: block; margin-bottom: 16px; opacity: 0.5;"></i>
                                         <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; color: var(--admin-text);">No hay citas registradas</div>
                                         <div style="font-size: 0.9rem; max-width: 400px; margin: 0 auto;">
-                                            Las citas enviadas desde el formulario web aparecerán aquí automáticamente.<br><br>
+                                            Las citas se sincronizan automáticamente desde Firebase.<br><br>
                                             También puede añadir citas manualmente haciendo clic en "Nueva Cita".
                                         </div>
                                     </td>
@@ -356,10 +324,10 @@
                             <tbody id="clientsTableBody">
                                 <tr class="empty-state">
                                     <td colspan="7" style="text-align: center; padding: 60px 20px; color: var(--admin-text-muted);">
-                                        <i class="fas fa-user-plus" style="font-size: 3rem; margin-bottom: 16px; display: block; opacity: 0.5;"></i>
+                                        <i class="fas fa-user-plus" style="font-size: 3rem; display: block; margin-bottom: 16px; opacity: 0.5;"></i>
                                         <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; color: var(--admin-text);">No hay clientes registrados</div>
                                         <div style="font-size: 0.9rem; max-width: 400px; margin: 0 auto;">
-                                            Los clientes se añadirán automáticamente cuando envíen una solicitud de cita desde la web.
+                                            Los clientes se sincronizan automáticamente desde Firebase.
                                         </div>
                                     </td>
                                 </tr>
@@ -400,7 +368,7 @@
                     <div class="chart-container">
                         <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 12px; display: block; text-align: center;"></i>
                         <p>Gráfico de citas por día - Últimos 30 días</p>
-                        <p style="font-size: 0.8rem; margin-top: 8px;">(Integración con librería de gráficos recomendada)</p>
+                        <p style="font-size: 0.8rem; margin-top: 8px;">(Datos en tiempo real desde Firebase)</p>
                     </div>
                 </div>
 
@@ -565,203 +533,41 @@
         </div>
     </main>
 
-    <!-- Auth System -->
-    <script src="../js/auth-service.js"></script>
-    <script src="../js/auth-ui.js"></script>
-    <script src="js/admin.js"></script>
+    <!-- Scripts Firebase -->
+    <script type="module" src="../js/firebase-config.js"></script>
+    <script type="module" src="../js/firebase-service.js"></script>
+    <script type="module" src="../js/auth-service.js"></script>
+    <script type="module" src="js/admin.js"></script>
 
-    <!-- Auth Guard & User Data -->
-    <script>
-    (function() {
-        'use strict';
+    <!-- Auth Guard -->
+    <script type="module">
+        import { auth } from '../js/firebase-config.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+        import { db } from '../js/firebase-config.js';
 
-        // Wait for auth service to load
-        function initAdminAuth() {
-            if (typeof window.AuthService === 'undefined') {
-                setTimeout(initAdminAuth, 100);
-                return;
-            }
-
-            // Check authentication
-            if (!window.AuthService.isAuthenticated()) {
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
                 window.location.href = 'login.html';
                 return;
             }
 
-            // Check admin role
-            if (!window.AuthService.isAdmin()) {
+            // Verificar si es admin
+            const adminSnap = await get(ref(db, `administradores/${user.uid}`));
+            if (!adminSnap.exists() || !adminSnap.val().activo) {
                 alert('Acceso denegado. Se requieren privilegios de administrador.');
                 window.location.href = '../pages/perfil.html';
                 return;
             }
 
-            const session = window.AuthService.getCurrentSession();
-            const user = window.AuthService.getCurrentUser();
-
-            // Update user info in top bar
-            const userNameEl = document.querySelector('.user-name');
-            const userRoleEl = document.querySelector('.user-role');
-            const userAvatarEl = document.querySelector('.user-avatar');
-
-            if (userNameEl) userNameEl.textContent = session.nombre + ' ' + session.apellidos;
-            if (userRoleEl) userRoleEl.textContent = session.role === 'administrador' ? 'Administrador' : 'Usuario';
-            if (userAvatarEl) userAvatarEl.textContent = (session.nombre.charAt(0) + session.apellidos.charAt(0)).toUpperCase();
-
-            // Add logout to user menu
-            const userMenu = document.querySelector('.user-menu');
-            if (userMenu) {
-                userMenu.style.cursor = 'pointer';
-                userMenu.addEventListener('click', function(e) {
-                    // Create dropdown if not exists
-                    let dropdown = document.getElementById('adminUserDropdown');
-                    if (dropdown) {
-                        dropdown.remove();
-                        return;
-                    }
-
-                    dropdown = document.createElement('div');
-                    dropdown.id = 'adminUserDropdown';
-                    dropdown.style.cssText = `
-                        position: absolute;
-                        top: calc(100% + 8px);
-                        right: 0;
-                        min-width: 200px;
-                        background: var(--admin-card);
-                        border: 1px solid var(--admin-border);
-                        border-radius: 10px;
-                        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-                        padding: 8px 0;
-                        z-index: 1000;
-                    `;
-                    dropdown.innerHTML = `
-                        <a href="../pages/perfil.html" style="display: flex; align-items: center; gap: 10px; padding: 10px 16px; color: var(--admin-text); font-size: 0.9rem; text-decoration: none; transition: all 0.15s;">
-                            <i class="fas fa-user" style="width: 18px; color: var(--admin-primary);"></i> Mi Perfil
-                        </a>
-                        <a href="../index.html" style="display: flex; align-items: center; gap: 10px; padding: 10px 16px; color: var(--admin-text); font-size: 0.9rem; text-decoration: none; transition: all 0.15s;">
-                            <i class="fas fa-home" style="width: 18px; color: var(--admin-primary);"></i> Sitio Web
-                        </a>
-                        <div style="border-top: 1px solid var(--admin-border); margin: 4px 0;"></div>
-                        <button id="adminLogoutBtn" style="display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 16px; background: none; border: none; color: #ef4444; font-family: 'Inter', sans-serif; font-size: 0.9rem; cursor: pointer; text-align: left;">
-                            <i class="fas fa-sign-out-alt" style="width: 18px;"></i> Cerrar Sesión
-                        </button>
-                    `;
-
-                    this.style.position = 'relative';
-                    this.appendChild(dropdown);
-
-                    dropdown.querySelector('#adminLogoutBtn').addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        window.AuthService.logout();
-                        window.location.href = 'login.html?msg=logout';
-                    });
-                });
-
-                // Close dropdown when clicking outside
-                document.addEventListener('click', function(e) {
-                    const dropdown = document.getElementById('adminUserDropdown');
-                    if (dropdown && !userMenu.contains(e.target)) {
-                        dropdown.remove();
-                    }
-                });
-            }
-
-            // Sync data from auth system to admin system
-            syncAuthData();
-        }
-
-        function syncAuthData() {
-            // Get appointments from the auth system (pending_appointments)
-            const authAppointments = JSON.parse(localStorage.getItem('pending_appointments') || '[]');
-
-            // Get users from auth system
-            const usersResult = window.AuthService.getAllUsers();
-            const authUsers = usersResult.success ? usersResult.users : [];
-
-            // Convert auth appointments to admin format if not already synced
-            const existingAdminApps = JSON.parse(localStorage.getItem('ayala_appointments') || '[]');
-            const existingIds = new Set(existingAdminApps.map(a => a.id));
-
-            let nextId = parseInt(localStorage.getItem('ayala_nextId')) || 1;
-            let newAppsCount = 0;
-
-            authAppointments.forEach(app => {
-                // Check if already exists by email + fecha_envio
-                const exists = existingAdminApps.some(ea => 
-                    ea.email === app.email && ea.fecha_envio === app.fecha_envio
-                );
-
-                if (!exists) {
-                    const newApp = {
-                        id: nextId++,
-                        nombre: app.nombre || 'Sin nombre',
-                        apellidos: app.apellidos || '',
-                        dni: app.dni || 'N/D',
-                        telefono: app.telefono || '',
-                        email: app.email || '',
-                        tipo_consulta: app.tipo_consulta || 'General',
-                        modalidad: app.modalidad || 'Presencial',
-                        urgencia: app.urgencia || 'normal',
-                        fecha_preferida: app.fecha_preferida || '',
-                        hora_preferida: app.hora_preferida || '',
-                        descripcion: app.descripcion || app.mensaje || '',
-                        status: app.status || 'pendiente',
-                        fecha_envio: app.fecha_envio || new Date().toISOString(),
-                        nota_interna: '',
-                        mensaje_cliente: ''
-                    };
-                    existingAdminApps.unshift(newApp);
-                    newAppsCount++;
-                }
-            });
-
-            if (newAppsCount > 0) {
-                localStorage.setItem('ayala_appointments', JSON.stringify(existingAdminApps));
-                localStorage.setItem('ayala_nextId', nextId.toString());
-            }
-
-            // Sync users to clients
-            let existingClients = JSON.parse(localStorage.getItem('ayala_clients') || '[]');
-            const clientEmails = new Set(existingClients.map(c => c.email));
-
-            authUsers.forEach(u => {
-                if (!clientEmails.has(u.email)) {
-                    existingClients.unshift({
-                        id: u.id || nextId++,
-                        nombre: u.nombre,
-                        apellidos: u.apellidos || '',
-                        dni: u.dni || 'N/D',
-                        telefono: u.telefono || '',
-                        email: u.email,
-                        total_citas: 0,
-                        ultima_cita: 'Nunca',
-                        role: u.role,
-                        active: u.active,
-                        createdAt: u.createdAt
-                    });
-                    clientEmails.add(u.email);
-                }
-            });
-
-            localStorage.setItem('ayala_clients', JSON.stringify(existingClients));
-            localStorage.setItem('ayala_nextId', nextId.toString());
-
-            // Trigger re-render if admin.js is already loaded
-            if (typeof renderDashboardAppointments === 'function') {
-                renderDashboardAppointments();
-                renderAppointmentsTable();
-                renderClientsTable();
-                updateStats();
-            }
-        }
-
-        // Initialize when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initAdminAuth);
-        } else {
-            initAdminAuth();
-        }
-
-    })();
+            // Actualizar info del usuario en la barra superior
+            const userSnap = await get(ref(db, `usuarios/${user.uid}`));
+            const userData = userSnap.val() || {};
+            
+            document.getElementById('topBarName').textContent = `${userData.nombre} ${userData.apellidos || ''}`;
+            document.getElementById('topBarAvatar').textContent = 
+                `${(userData.nombre?.charAt(0) || 'A')}${(userData.apellidos?.charAt(0) || 'D')}`;
+        });
     </script>
 </body>
 </html>

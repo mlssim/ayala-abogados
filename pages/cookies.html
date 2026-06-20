@@ -10,12 +10,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="../css/style.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
+    <style>
+        .logo-img {
+            height: 45px;
+            width: auto;
+            border-radius: var(--radius-sm);
+            object-fit: contain;
+        }
+    </style>
 </head>
 <body>
     <header class="header" id="header">
         <div class="header-inner">
             <a href="../index.html" class="logo">
-                <div class="logo-icon"><i class="fas fa-balance-scale"></i></div>
+                <img src="../images/logo.jpeg" alt="Ayala Abogados - Logo" class="logo-img">
                 <div class="logo-text">Ayala <span>Abogados</span></div>
             </a>
             <nav class="nav-desktop">
@@ -53,13 +61,8 @@
         <div style="max-width: 800px; margin: 0 auto;">
             <div style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 40px; border: 1px solid var(--border-light); margin-bottom: 24px; transition: all var(--transition-slow);">
                 <h2 style="margin-bottom: 16px; color: var(--accent-gold);">1. ¿Qué son las Cookies?</h2>
-                <p style="color: var(--text-secondary); line-height: 1.8;">
-                    Las cookies son pequeños archivos de texto que los sitios web que visita colocan en su 
-                    ordenador. Las cookies se utilizan ampliamente para que los sitios web funcionen de 
-                    manera más eficiente, así como para proporcionar información a los propietarios del sitio.
-                </p>
+                <p style="color: var(--text-secondary); line-height: 1.8;">Las cookies son pequeños archivos de texto que los sitios web que visita colocan en su ordenador. Las cookies se utilizan ampliamente para que los sitios web funcionen de manera más eficiente, así como para proporcionar información a los propietarios del sitio.</p>
             </div>
-
             <div style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 40px; border: 1px solid var(--border-light); margin-bottom: 24px; transition: all var(--transition-slow);">
                 <h2 style="margin-bottom: 16px; color: var(--accent-gold);">2. Tipos de Cookies que Utilizamos</h2>
                 <table style="width: 100%; border-collapse: collapse; color: var(--text-secondary);">
@@ -84,7 +87,6 @@
                     </tbody>
                 </table>
             </div>
-
             <div style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 40px; border: 1px solid var(--border-light); margin-bottom: 24px; transition: all var(--transition-slow);">
                 <h2 style="margin-bottom: 16px; color: var(--accent-gold);">3. Gestión de Cookies</h2>
                 <p style="margin-bottom: 12px; color: var(--text-secondary);">Puede gestionar las cookies a través de la configuración de su navegador:</p>
@@ -95,14 +97,9 @@
                     <li><strong>Edge:</strong> Configuración → Cookies y permisos del sitio</li>
                 </ul>
             </div>
-
             <div style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 40px; border: 1px solid var(--border-light); margin-bottom: 24px; transition: all var(--transition-slow);">
                 <h2 style="margin-bottom: 16px; color: var(--accent-gold);">4. Consentimiento</h2>
-                <p style="color: var(--text-secondary); line-height: 1.8;">
-                    Al navegar por nuestro sitio web, usted acepta el uso de cookies de acuerdo con esta 
-                    política. Si no está de acuerdo, puede desactivar las cookies en la configuración de 
-                    su navegador, aunque esto puede afectar la funcionalidad del sitio.
-                </p>
+                <p style="color: var(--text-secondary); line-height: 1.8;">Al navegar por nuestro sitio web, usted acepta el uso de cookies de acuerdo con esta política. Si no está de acuerdo, puede desactivar las cookies en la configuración de su navegador, aunque esto puede afectar la funcionalidad del sitio.</p>
             </div>
         </div>
     </section>
@@ -111,8 +108,8 @@
         <div class="footer-grid">
             <div class="footer-brand">
                 <div class="logo" style="margin-bottom: 16px;">
-                    <div class="logo-icon"><i class="fas fa-balance-scale"></i></div>
-                    <div class="logo-text">Ayala <span>Abogados</span></div>
+                    <img src="../images/logo.jpeg" alt="Ayala Abogados - Logo" class="logo-img" style="height: 40px;">
+                    <div class="logo-text" style="font-size: 1.3rem;">Ayala <span>Abogados</span></div>
                 </div>
                 <p>Bufete de abogados con más de 15 años de experiencia en Madrid.</p>
             </div>

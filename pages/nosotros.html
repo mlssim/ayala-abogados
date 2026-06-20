@@ -11,12 +11,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="../css/style.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
+    <style>
+        .logo-img {
+            height: 45px;
+            width: auto;
+            border-radius: var(--radius-sm);
+            object-fit: contain;
+        }
+    </style>
 </head>
 <body>
     <header class="header" id="header">
         <div class="header-inner">
             <a href="../index.html" class="logo">
-                <div class="logo-icon"><i class="fas fa-balance-scale"></i></div>
+                <img src="../images/logo.jpeg" alt="Ayala Abogados - Logo" class="logo-img">
                 <div class="logo-text">Ayala <span>Abogados</span></div>
             </a>
             <nav class="nav-desktop">
@@ -49,9 +57,7 @@
         <div class="section" style="position: relative; z-index: 2; text-align: center; padding-top: 40px; padding-bottom: 40px;">
             <span class="section-label" style="background: rgba(201,162,39,0.2); color: var(--accent-gold); border: 1px solid rgba(201,162,39,0.3);">Nuestro Equipo</span>
             <h1 style="color: white; margin-top: 16px; font-size: clamp(2rem, 4vw, 3.5rem);">Quiénes Somos</h1>
-            <p style="color: rgba(255,255,255,0.7); max-width: 600px; margin: 16px auto 0; font-size: 1.1rem;">
-                Profesionales comprometidos con la justicia y la defensa de sus derechos.
-            </p>
+            <p style="color: rgba(255,255,255,0.7); max-width: 600px; margin: 16px auto 0; font-size: 1.1rem;">Profesionales comprometidos con la justicia y la defensa de sus derechos.</p>
         </div>
     </section>
 
@@ -61,19 +67,9 @@
             <div class="animate">
                 <span class="section-label">Nuestra Historia</span>
                 <h2 style="margin: 16px 0;">Más de 15 Años de Trayectoria</h2>
-                <p style="font-size: 1.05rem; margin-bottom: 16px;">
-                    <strong>Ayala Abogados</strong> nació con la vocación de ofrecer un servicio legal 
-                    de excelencia, cercano y efectivo. Desde nuestros inicios en Madrid, hemos defendido 
-                    los derechos de cientos de clientes con profesionalidad y dedicación.
-                </p>
-                <p style="margin-bottom: 16px;">
-                    Nuestro bufete se distingue por combinar la experiencia acumulada a lo largo de años 
-                    de práctica con un enfoque moderno y adaptado a las necesidades actuales de nuestros clientes.
-                </p>
-                <p style="margin-bottom: 24px;">
-                    Ubicados en la <strong>Calle General Arrando, 8</strong>, en pleno centro de Madrid, 
-                    ofrecemos un entorno profesional y accesible para todas sus consultas legales.
-                </p>
+                <p style="font-size: 1.05rem; margin-bottom: 16px;"><strong>Ayala Abogados</strong> nació con la vocación de ofrecer un servicio legal de excelencia, cercano y efectivo. Desde nuestros inicios en Madrid, hemos defendido los derechos de cientos de clientes con profesionalidad y dedicación.</p>
+                <p style="margin-bottom: 16px;">Nuestro bufete se distingue por combinar la experiencia acumulada a lo largo de años de práctica con un enfoque moderno y adaptado a las necesidades actuales de nuestros clientes.</p>
+                <p style="margin-bottom: 24px;">Ubicados en la <strong>Calle General Arrando, 8</strong>, en pleno centro de Madrid, ofrecemos un entorno profesional y accesible para todas sus consultas legales.</p>
                 <div style="display: flex; gap: 24px;">
                     <div style="text-align: center;">
                         <div style="font-family: var(--font-heading); font-size: 2.5rem; font-weight: 700; color: var(--accent-gold);">15+</div>
@@ -102,23 +98,17 @@
             </div>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;">
                 <div class="animate" style="text-align: center;">
-                    <div style="width: 70px; height: 70px; background: var(--accent-gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #1a202c; margin: 0 auto 20px;">
-                        <i class="fas fa-handshake"></i>
-                    </div>
+                    <div style="width: 70px; height: 70px; background: var(--accent-gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #1a202c; margin: 0 auto 20px;"><i class="fas fa-handshake"></i></div>
                     <h3 style="font-size: 1.2rem; margin-bottom: 12px;">Compromiso</h3>
                     <p style="color: var(--text-muted); font-size: 0.95rem;">Nos implicamos al 100% en cada caso, tratando cada asunto como si fuera propio.</p>
                 </div>
                 <div class="animate animate-delay-1" style="text-align: center;">
-                    <div style="width: 70px; height: 70px; background: var(--accent-gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #1a202c; margin: 0 auto 20px;">
-                        <i class="fas fa-shield-alt"></i>
-                    </div>
+                    <div style="width: 70px; height: 70px; background: var(--accent-gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #1a202c; margin: 0 auto 20px;"><i class="fas fa-shield-alt"></i></div>
                     <h3 style="font-size: 1.2rem; margin-bottom: 12px;">Integridad</h3>
                     <p style="color: var(--text-muted); font-size: 0.95rem;">Actuamos con honestidad, transparencia y ética profesional en todo momento.</p>
                 </div>
                 <div class="animate animate-delay-2" style="text-align: center;">
-                    <div style="width: 70px; height: 70px; background: var(--accent-gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #1a202c; margin: 0 auto 20px;">
-                        <i class="fas fa-bullseye"></i>
-                    </div>
+                    <div style="width: 70px; height: 70px; background: var(--accent-gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #1a202c; margin: 0 auto 20px;"><i class="fas fa-bullseye"></i></div>
                     <h3 style="font-size: 1.2rem; margin-bottom: 12px;">Excelencia</h3>
                     <p style="color: var(--text-muted); font-size: 0.95rem;">Buscamos los mejores resultados mediante una preparación rigurosa y estrategias efectivas.</p>
                 </div>
@@ -129,21 +119,10 @@
         <div style="text-align: center; margin-bottom: 40px;">
             <span class="section-label">Ubicación</span>
             <h2 class="section-title" style="margin-top: 16px;">Nuestra Oficina en Madrid</h2>
-            <p style="color: var(--text-muted); max-width: 600px; margin: 16px auto 32px;">
-                Estamos ubicados en una zona céntrica y bien comunicada de Madrid, 
-                fácilmente accesible en transporte público.
-            </p>
+            <p style="color: var(--text-muted); max-width: 600px; margin: 16px auto 32px;">Estamos ubicados en una zona céntrica y bien comunicada de Madrid, fácilmente accesible en transporte público.</p>
         </div>
         <div class="animate" style="border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-lg); margin-bottom: 40px;">
-            <iframe 
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3036.0!2d-3.7!3d40.4!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDDCsDI0JzAwLjAiTiAzwrA0MicwMC4wIlc!5e0!3m2!1ses!2ses!4v1600000000000!5m2!1ses!2ses"
-                width="100%" 
-                height="450" 
-                style="border:0;" 
-                allowfullscreen="" 
-                loading="lazy" 
-                referrerpolicy="no-referrer-when-downgrade">
-            </iframe>
+            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3036.0!2d-3.7!3d40.4!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDDCsDI0JzAwLjAiTiAzwrA0MicwMC4wIlc!5e0!3m2!1ses!2ses!4v1600000000000!5m2!1ses!2ses" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
         </div>
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; text-align: center;">
             <div style="padding: 24px; background: var(--bg-card); border-radius: var(--radius-md); border: 1px solid var(--border-light);">
@@ -169,8 +148,8 @@
         <div class="footer-grid">
             <div class="footer-brand">
                 <div class="logo" style="margin-bottom: 16px;">
-                    <div class="logo-icon"><i class="fas fa-balance-scale"></i></div>
-                    <div class="logo-text">Ayala <span>Abogados</span></div>
+                    <img src="../images/logo.jpeg" alt="Ayala Abogados - Logo" class="logo-img" style="height: 40px;">
+                    <div class="logo-text" style="font-size: 1.3rem;">Ayala <span>Abogados</span></div>
                 </div>
                 <p>Bufete de abogados con más de 15 años de experiencia defendiendo los derechos de nuestros clientes en Madrid.</p>
                 <div class="footer-social">

@@ -8,9 +8,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="css/admin.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
     <style>
+        .logo-img {
+            height: 60px;
+            width: auto;
+            border-radius: var(--radius-sm);
+            object-fit: contain;
+            margin-bottom: 12px;
+        }
         .login-error {
             background: rgba(239, 68, 68, 0.1);
             border: 1px solid rgba(239, 68, 68, 0.3);
@@ -82,7 +89,7 @@
 <body>
     <div class="login-page">
         <div class="login-card">
-            <div class="login-logo"><i class="fas fa-balance-scale"></i></div>
+            <img src="images/logo.jpeg" alt="Ayala Abogados - Logo" class="logo-img">
             <h1 class="login-title">Ayala Abogados</h1>
             <p class="login-subtitle">Panel de Administración</p>
 
@@ -109,7 +116,7 @@
             </form>
 
             <div class="login-footer">
-                <p><a href="../index.html" style="color: var(--admin-text-muted);"><i class="fas fa-arrow-left"></i> Volver al sitio web</a></p>
+                <p><a href="index.html" style="color: var(--admin-text-muted);"><i class="fas fa-arrow-left"></i> Volver al sitio web</a></p>
                 <p style="margin-top: 16px; font-size: 0.75rem; color: var(--admin-text-muted);">
                     Admin por defecto: admin@ayalaabogados.es / Admin123!
                 </p>
@@ -158,192 +165,7 @@
                 successDiv.classList.add('visible');
 
                 setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 800);
-
-            } catch (error) {
-                let msg = 'Email o contraseña incorrectos.';
-                if (error.code === 'auth/user-not-found') msg = 'No existe una cuenta con este email.';
-                if (error.code === 'auth/wrong-password') msg = 'Contraseña incorrecta.';
-                if (error.code === 'auth/too-many-requests') msg = 'Demasiados intentos. Inténtelo más tarde.';
-                
-                errorDiv.textContent = msg;
-                errorDiv.classList.add('visible');
-                btn.classList.remove('loading');
-                btn.disabled = false;
-            }
-        });
-
-        // Check URL params for messages
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('msg') === 'logout') {
-            const successDiv = document.getElementById('loginSuccess');
-            successDiv.textContent = 'Ha cerrado sesión correctamente.';
-            successDiv.classList.add('visible');
-        }
-    </script>
-</body>
-</html><!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acceso Administración | Ayala Abogados</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="../css/admin.css">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
-    <style>
-        .login-error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #ef4444;
-            padding: 12px 16px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            margin-bottom: 16px;
-            display: none;
-        }
-        .login-error.visible { display: block; }
-        .login-success {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            color: #10b981;
-            padding: 12px 16px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            margin-bottom: 16px;
-            display: none;
-        }
-        .login-success.visible { display: block; }
-        .login-input {
-            width: 100%;
-            padding: 12px 14px;
-            border: 1px solid var(--admin-border);
-            border-radius: 8px;
-            background: var(--admin-card);
-            color: var(--admin-text);
-            font-size: 0.95rem;
-            transition: border-color 0.2s;
-            font-family: 'Inter', sans-serif;
-        }
-        .login-input:focus {
-            outline: none;
-            border-color: var(--admin-primary);
-        }
-        .login-btn {
-            width: 100%;
-            padding: 14px;
-            border-radius: 8px;
-            border: none;
-            background: var(--admin-primary);
-            color: #1a202c;
-            font-family: 'Inter', sans-serif;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .login-btn:hover {
-            background: var(--admin-primary-hover);
-            transform: translateY(-1px);
-        }
-        .login-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .login-btn .spinner { display: none; }
-        .login-btn.loading .spinner { display: inline-block; }
-        .login-btn.loading .btn-text { display: none; }
-    </style>
-</head>
-<body>
-    <div class="login-page">
-        <div class="login-card">
-            <div class="login-logo"><i class="fas fa-balance-scale"></i></div>
-            <h1 class="login-title">Ayala Abogados</h1>
-            <p class="login-subtitle">Panel de Administración</p>
-
-            <div class="login-error" id="loginError"></div>
-            <div class="login-success" id="loginSuccess"></div>
-
-            <form class="login-form" id="loginForm">
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="email" class="login-input" placeholder="su@email.com" required>
-                </div>
-                <div class="form-group">
-                    <label>Contraseña</label>
-                    <input type="password" id="password" class="login-input" placeholder="Su contraseña" required>
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 0.85rem; color: var(--admin-text-muted);">
-                    <input type="checkbox" id="rememberMe" style="accent-color: var(--admin-primary);">
-                    <label for="rememberMe" style="cursor: pointer;">Recordarme en este dispositivo</label>
-                </div>
-                <button type="submit" class="login-btn" id="loginBtn">
-                    <span class="btn-text"><i class="fas fa-sign-in-alt"></i> Acceder</span>
-                    <span class="spinner"><i class="fas fa-spinner fa-spin"></i> Entrando...</span>
-                </button>
-            </form>
-
-            <div class="login-footer">
-                <p><a href="../index.html" style="color: var(--admin-text-muted);"><i class="fas fa-arrow-left"></i> Volver al sitio web</a></p>
-                <p style="margin-top: 16px; font-size: 0.75rem; color: var(--admin-text-muted);">
-                    Admin por defecto: admin@ayalaabogados.es / Admin123!
-                </p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Firebase Scripts -->
-    <script type="module">
-        import { auth } from '../js/firebase-config.js';
-        import { signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        import { ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-        import { db } from '../js/firebase-config.js';
-
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-            const remember = document.getElementById('rememberMe').checked;
-            const btn = document.getElementById('loginBtn');
-            const errorDiv = document.getElementById('loginError');
-            const successDiv = document.getElementById('loginSuccess');
-
-            errorDiv.classList.remove('visible');
-            successDiv.classList.remove('visible');
-            btn.classList.add('loading');
-            btn.disabled = true;
-
-            try {
-                await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
-                const credential = await signInWithEmailAndPassword(auth, email, password);
-                
-                // Verificar si es admin
-                const adminSnap = await get(ref(db, `administradores/${credential.user.uid}`));
-                if (!adminSnap.exists() || !adminSnap.val().activo) {
-                    errorDiv.textContent = 'Acceso denegado. Esta cuenta no tiene privilegios de administrador.';
-                    errorDiv.classList.add('visible');
-                    await auth.signOut();
-                    btn.classList.remove('loading');
-                    btn.disabled = false;
-                    return;
-                }
-
-                successDiv.textContent = '¡Bienvenido! Redirigiendo...';
-                successDiv.classList.add('visible');
-
-                setTimeout(() => {
-                    window.location.href = 'index.html';
+                    window.location.href = 'admin-index.html';
                 }, 800);
 
             } catch (error) {
