@@ -4,7 +4,7 @@
    ============================================ */
 
 // admin/js/admin.js → ../../js/firebase-config.js (sube 2 niveles: admin/js → admin → raíz → js/)
-import { db } from '../js/firebase-config.js';
+import { db } from '../../js/firebase-config.js';
 import { 
     ref, 
     onValue, 
@@ -51,58 +51,47 @@ function syncWithFirebase() {
     // Escuchar citas en tiempo real
     const citasRef = ref(db, 'citas');
     appointmentsUnsubscribe = onValue(citasRef, (snapshot) => {
-        try {
-            const citas = snapshot.val() || {};
-            appointments = Object.values(citas).sort((a, b) => 
-                new Date(b.fechaCreacion || 0) - new Date(a.fechaCreacion || 0)
-            );
-            renderDashboardAppointments();
-            renderAppointmentsTable();
-            updateStats();
-            renderCalendar(calendarCurrentMonth, calendarCurrentYear);
-        } catch (e) {
-            console.error('Error en onValue citas:', e);
-        }
+        const citas = snapshot.val() || {};
+        appointments = Object.values(citas).sort((a, b) => 
+            new Date(b.fechaCreacion || 0) - new Date(a.fechaCreacion || 0)
+        );
+
+        renderDashboardAppointments();
+        renderAppointmentsTable();
+        updateStats();
+        renderCalendar(calendarCurrentMonth, calendarCurrentYear);
     });
 
     // Escuchar usuarios (clientes)
     const usersRef = ref(db, 'usuarios');
     onValue(usersRef, (snapshot) => {
-        try {
-            const users = snapshot.val() || {};
-            clients = Object.values(users).filter(u => u.role !== 'administrador').map(u => ({
-                id: u.uid,
-                nombre: u.nombre,
-                apellidos: u.apellidos || '',
-                dni: u.dni || 'N/D',
-                telefono: u.telefono || '',
-                email: u.email,
-                total_citas: 0,
-                ultima_cita: 'Nunca',
-                role: u.role,
-                active: u.active,
-                createdAt: u.createdAt
-            }));
-            renderClientsTable();
-            updateStats();
-        } catch (e) {
-            console.error('Error en onValue usuarios:', e);
-        }
+        const users = snapshot.val() || {};
+        clients = Object.values(users).filter(u => u.role !== 'administrador').map(u => ({
+            id: u.uid,
+            nombre: u.nombre,
+            apellidos: u.apellidos || '',
+            dni: u.dni || 'N/D',
+            telefono: u.telefono || '',
+            email: u.email,
+            total_citas: 0,
+            ultima_cita: 'Nunca',
+            role: u.role,
+            active: u.active,
+            createdAt: u.createdAt
+        }));
+        renderClientsTable();
+        updateStats();
     });
 
     // Escuchar notificaciones
     const notifRef = ref(db, 'notificaciones');
     onValue(notifRef, (snapshot) => {
-        try {
-            const notifs = snapshot.val() || {};
-            notifications = Object.values(notifs).filter(n => !n.leida).sort((a, b) => 
-                new Date(b.fecha || 0) - new Date(a.fecha || 0)
-            );
-            renderNotifications();
-            updateStats();
-        } catch (e) {
-            console.error('Error en onValue notificaciones:', e);
-        }
+        const notifs = snapshot.val() || {};
+        notifications = Object.values(notifs).filter(n => !n.leida).sort((a, b) => 
+            new Date(b.fecha || 0) - new Date(a.fecha || 0)
+        );
+        renderNotifications();
+        updateStats();
     });
 }
 
@@ -317,35 +306,33 @@ function renderNotifications() {
 
 // ========== ESTADÍSTICAS ==========
 function updateStats() {
-    try {
-        const today = new Date().toISOString().split('T')[0];
-        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-        const statWeek = document.getElementById('statWeekAppointments');
-        const statClients = document.getElementById('statActiveClients');
-        const statPending = document.getElementById('statTodayPending');
-        const statUrgent = document.getElementById('statUrgentCases');
+    const statWeek = document.getElementById('statWeekAppointments');
+    const statClients = document.getElementById('statActiveClients');
+    const statPending = document.getElementById('statTodayPending');
+    const statUrgent = document.getElementById('statUrgentCases');
 
-        if (statWeek) statWeek.textContent = appointments.filter(a => (a.fechaCreacion || '').split('T')[0] >= weekAgo).length;
-        if (statClients) statClients.textContent = clients.length;
-        if (statPending) statPending.textContent = appointments.filter(a => a.fecha_preferida === today && (a.status === 'pendiente' || !a.status)).length;
-        if (statUrgent) statUrgent.textContent = appointments.filter(a => a.urgencia === 'urgente' || a.urgencia === 'muy-urgente').length;
+    if (statWeek) statWeek.textContent = appointments.filter(a => (a.fechaCreacion || '').split('T')[0] >= weekAgo).length;
+    if (statClients) statClients.textContent = clients.length;
+    if (statPending) statPending.textContent = appointments.filter(a => a.fecha_preferida === today && (a.status === 'pendiente' || !a.status)).length;
+    if (statUrgent) statUrgent.textContent = appointments.filter(a => a.urgencia === 'urgente' || a.urgencia === 'muy-urgente').length;
 
-        const appBadge = document.getElementById('appointmentsBadge');
-        const notifBadge = document.getElementById('notificationsBadge');
-        const pendingToday = appointments.filter(a => a.fecha_preferida === today && (a.status === 'pendiente' || !a.status)).length;
+    const appBadge = document.getElementById('appointmentsBadge');
+    const notifBadge = document.getElementById('notificationsBadge');
+    const pendingToday = appointments.filter(a => a.fecha_preferida === today && (a.status === 'pendiente' || !a.status)).length;
 
-        if (appBadge) { 
-            appBadge.textContent = pendingToday; 
-            appBadge.style.display = pendingToday > 0 ? 'inline-flex' : 'none'; 
-        }
-        if (notifBadge) { 
-            notifBadge.textContent = notifications.length; 
-            notifBadge.style.display = notifications.length > 0 ? 'inline-flex' : 'none'; 
-        }
-    } catch (e) {
-        console.error('Error en updateStats:', e);
+    if (appBadge) { 
+        appBadge.textContent = pendingToday; 
+        appBadge.style.display = pendingToday > 0 ? 'inline-flex' : 'none'; 
     }
+    if (notifBadge) { 
+        notifBadge.textContent = notifications.length; 
+        notifBadge.style.display = notifications.length > 0 ? 'inline-flex' : 'none'; 
+    }
+
+    renderCalendar(calendarCurrentMonth, calendarCurrentYear);
 }
 
 // ========== CRUD CITAS ==========
