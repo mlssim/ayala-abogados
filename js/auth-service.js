@@ -169,6 +169,11 @@ window.AuthService = {
                 return { success: false, error: 'Su cuenta ha sido desactivada. Contacte con el administrador.' };
             }
 
+            // CORREGIDO: Si es admin, asegurar que existe en nodo administradores
+            if (userData.role === 'administrador') {
+                await set(ref(db, 'administradores/' + user.uid), { activo: true });
+            }
+
             resetLoginAttempts(email);
 
             // Guardar sesión en localStorage para persistencia
@@ -293,14 +298,10 @@ window.AuthService = {
 
     // Cambiar contraseña
     changePassword: async function(currentPassword, newPassword) {
-        // Nota: Cambiar contraseña requiere reautenticación en Firebase
-        // Esta es una implementación simplificada
         if (newPassword.length < 6) {
             return { success: false, error: 'La nueva contraseña debe tener al menos 6 caracteres.' };
         }
         
-        // En producción, usar updatePassword() de Firebase Auth
-        // después de reautenticar al usuario
         return { success: true, message: 'Función disponible próximamente. Contacte con soporte.' };
     },
 
@@ -358,6 +359,12 @@ window.AuthService = {
             }
 
             await update(ref(db, 'usuarios/' + userId), { role: newRole });
+            
+            // CORREGIDO: Si se asigna rol admin, crear nodo en administradores
+            if (newRole === 'administrador') {
+                await set(ref(db, 'administradores/' + userId), { activo: true });
+            }
+            
             return { success: true, message: `Rol actualizado a ${newRole}.` };
         } catch (error) {
             return { success: false, error: 'Error al cambiar el rol.' };
@@ -464,11 +471,13 @@ window.AuthService = {
                     active: true
                 });
 
+                // CORREGIDO: Crear también en administradores
+                await set(ref(db, 'administradores/' + user.uid), { activo: true });
+
                 console.log('✅ Admin por defecto creado: admin@ayalaabogados.es / Admin123!');
                 return true;
             } catch (error) {
                 if (error.code === 'auth/email-already-in-use') {
-                    // El usuario ya existe, verificar si es admin
                     return false;
                 }
                 throw error;
@@ -483,10 +492,8 @@ window.AuthService = {
 // Escuchar cambios de autenticación
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        // Usuario autenticado
         console.log('Usuario autenticado:', user.email);
     } else {
-        // Usuario no autenticado
         console.log('Usuario no autenticado');
     }
 });

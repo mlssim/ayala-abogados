@@ -525,13 +525,12 @@
         </div>
     </main>
 
-    <!-- Scripts Firebase -->
+    <!-- Scripts Firebase - CORREGIDO: Eliminado firebase-service.js que no existe -->
     <script type="module" src="../js/firebase-config.js"></script>
-    <script type="module" src="../js/firebase-service.js"></script>
     <script type="module" src="../js/auth-service.js"></script>
     <script type="module" src="js/admin.js"></script>
 
-    <!-- Auth Guard -->
+    <!-- Auth Guard - CORREGIDO: Verifica rol en usuarios en lugar de administradores -->
     <script type="module">
         import { auth } from '../js/firebase-config.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -544,18 +543,17 @@
                 return;
             }
 
-            // Verificar si es admin
-            const adminSnap = await get(ref(db, `administradores/${user.uid}`));
-            if (!adminSnap.exists() || !adminSnap.val().activo) {
+            // CORREGIDO: Verificar rol en usuarios en lugar de administradores
+            const userSnap = await get(ref(db, `usuarios/${user.uid}`));
+            const userData = userSnap.val() || {};
+            
+            if (userData.role !== 'administrador') {
                 alert('Acceso denegado. Se requieren privilegios de administrador.');
-                window.location.href = '../pages/perfil.html';
+                window.location.href = '../index.html';
                 return;
             }
 
             // Actualizar info del usuario en la barra superior
-            const userSnap = await get(ref(db, `usuarios/${user.uid}`));
-            const userData = userSnap.val() || {};
-            
             document.getElementById('topBarName').textContent = `${userData.nombre} ${userData.apellidos || ''}`;
             document.getElementById('topBarAvatar').textContent = 
                 `${(userData.nombre?.charAt(0) || 'A')}${(userData.apellidos?.charAt(0) || 'D')}`;

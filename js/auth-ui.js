@@ -68,7 +68,6 @@
 
     // ===== MODAL DE AUTENTICACIÓN =====
     function createAuthModal() {
-        // Eliminar modal existente
         const existing = document.getElementById('authModal');
         if (existing) existing.remove();
 
@@ -346,26 +345,22 @@
 
         document.body.appendChild(modal);
 
-        // Animación de entrada
         requestAnimationFrame(() => {
             modal.style.opacity = '1';
             modal.querySelector('.auth-modal-content').style.transform = 'translateY(0)';
         });
 
-        // Event listeners del modal
         setupModalEvents(modal);
 
         return modal;
     }
 
     function setupModalEvents(modal) {
-        // Cerrar modal
         modal.querySelector('.auth-modal-close').addEventListener('click', closeAuthModal);
         modal.addEventListener('click', function(e) {
             if (e.target === modal) closeAuthModal();
         });
 
-        // Tabs
         modal.querySelectorAll('.auth-tab').forEach(tab => {
             tab.addEventListener('click', function() {
                 const target = this.dataset.tab;
@@ -373,7 +368,6 @@
             });
         });
 
-        // Switch entre tabs desde links
         modal.querySelectorAll('.auth-switch-tab').forEach(link => {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -381,7 +375,6 @@
             });
         });
 
-        // Toggle password visibility
         modal.querySelectorAll('.toggle-password').forEach(btn => {
             btn.addEventListener('click', function() {
                 const input = this.parentElement.querySelector('input');
@@ -398,7 +391,7 @@
             });
         });
 
-        // Login form
+        // Login form - CORREGIDO: añadido await
         const loginForm = modal.querySelector('#loginForm');
         loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -415,7 +408,7 @@
             btnLoading.style.display = 'inline';
             submitBtn.disabled = true;
 
-            const result = window.AuthService.login(email, password, remember);
+            const result = await window.AuthService.login(email, password, remember); // ← await añadido
 
             btnText.style.display = 'inline';
             btnLoading.style.display = 'none';
@@ -430,7 +423,7 @@
             }
         });
 
-        // Register form
+        // Register form - CORREGIDO: añadido await
         const registerForm = modal.querySelector('#registerForm');
         registerForm.addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -453,7 +446,7 @@
             btnLoading.style.display = 'inline';
             submitBtn.disabled = true;
 
-            const result = window.AuthService.register(userData);
+            const result = await window.AuthService.register(userData); // ← await añadido
 
             btnText.style.display = 'inline';
             btnLoading.style.display = 'none';
@@ -589,7 +582,6 @@
             </div>
         `;
 
-        // Toggle dropdown
         const toggle = menu.querySelector('.auth-user-toggle');
         const dropdown = menu.querySelector('.auth-user-dropdown');
 
@@ -607,14 +599,12 @@
             }
         });
 
-        // Cerrar al hacer click fuera
         document.addEventListener('click', function() {
             dropdown.style.opacity = '0';
             dropdown.style.visibility = 'hidden';
             dropdown.style.transform = 'translateY(-10px)';
         });
 
-        // Logout
         menu.querySelector('.auth-logout-btn').addEventListener('click', function() {
             window.AuthService.logout();
             showNotification('success', 'Sesión cerrada', 'Ha cerrado sesión correctamente.');
@@ -677,15 +667,12 @@
 
     // ===== INICIALIZACIÓN =====
     function initAuthUI() {
-        // Agregar contenedor de auth al header
         const headerActions = document.querySelector('.header-actions');
         if (headerActions) {
-            // Insertar antes del menú móvil
             const authContainer = createElement('div', '');
             authContainer.id = 'authContainer';
             authContainer.style.cssText = 'display: flex; align-items: center;';
 
-            // Insertar antes del menu-toggle
             const menuToggle = headerActions.querySelector('.menu-toggle');
             if (menuToggle) {
                 headerActions.insertBefore(authContainer, menuToggle);
@@ -696,7 +683,6 @@
             updateAuthUI();
         }
 
-        // Agregar estilos CSS para el sistema de auth
         addAuthStyles();
     }
 
@@ -753,14 +739,17 @@
         document.head.appendChild(style);
     }
 
-    // Inicializar cuando el DOM esté listo
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initAuthUI);
-    } else {
-        initAuthUI();
+    // CORREGIDO: Esperar 1 segundo a que Firebase confirme auth
+    function delayedInit() {
+        setTimeout(initAuthUI, 1000);
     }
 
-    // Exponer funciones globales
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', delayedInit);
+    } else {
+        delayedInit();
+    }
+
     window.AuthUI = {
         openLogin: function() { createAuthModal(); switchAuthTab('login'); },
         openRegister: function() { createAuthModal(); switchAuthTab('register'); },
