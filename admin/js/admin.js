@@ -4,7 +4,7 @@
    ============================================ */
 
 // admin/js/admin.js → ../../js/firebase-config.js (sube 2 niveles: admin/js → admin → raíz → js/)
-import { db } from '../../js/firebase-config.js';
+import { db } from '../js/firebase-config.js';
 import { 
     ref, 
     onValue, 
