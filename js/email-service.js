@@ -3,7 +3,7 @@
    Envío de formularios y sincronización con Realtime DB
    ============================================ */
 
-import { AppointmentService } from './appointment-service.js';
+import './appointment-service.js';
 
 // Configuración de EmailJS
 const EMAILJS_CONFIG = {

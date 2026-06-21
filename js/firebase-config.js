@@ -7,13 +7,13 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-aut
 import { getDatabase } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
-    apiKey: "TU_API_KEY", // Reemplaza con tu API Key de Firebase
+    apiKey: "AIzaSyCaxlVIHZ38VoZ59mcSlnCfgaF9jJ9nxL8",
     authDomain: "ayala-abogados.firebaseapp.com",
-    databaseURL: "https://ayala-abogados-default-rtdb.europe-west1.firebasedatabase.app/",
+    databaseURL: "https://ayala-abogados-default-rtdb.europe-west1.firebasedatabase.app",
     projectId: "ayala-abogados",
     storageBucket: "ayala-abogados.appspot.com",
-    messagingSenderId: "TU_MESSAGING_SENDER_ID",
-    appId: "TU_APP_ID"
+    messagingSenderId: "1040704468911",
+    appId: "1:1040704468911:web:504d0cd8023da786bfa15a"
 };
 
 const app = initializeApp(firebaseConfig);
