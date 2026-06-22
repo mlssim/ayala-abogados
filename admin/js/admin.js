@@ -11,8 +11,7 @@ import {
     get, 
     update, 
     remove,
-    set,
-    push
+    set
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 // ===== DATOS GLOBALES =====
@@ -62,14 +61,33 @@ function sanitizeData(data) {
 
 // ========== SINCRONIZACIÓN CON FIREBASE ==========
 function syncWithFirebase() {
-    // Escuchar citas en tiempo real
+    // Escuchar citas en tiempo real - FILTRADO POR ADMIN ASIGNADO
     const citasRef = ref(db, 'citas');
     appointmentsUnsubscribe = onValue(citasRef, (snapshot) => {
         try {
             const citas = sanitizeData(snapshot.val()) || {};
-            appointments = Object.values(citas).sort((a, b) => 
-                new Date(b.fechaCreacion || 0) - new Date(a.fechaCreacion || 0)
-            );
+            const allAppointments = Object.values(citas);
+
+            // Obtener UID del admin actualmente logueado
+            const currentAdminUid = window.currentAdminUid || null;
+
+            // Filtrar citas:
+            // - Si es admin logueado: muestra citas asignadas a él + citas "cualquiera"
+            // - Si no hay admin logueado (fallback): muestra todas
+            if (currentAdminUid) {
+                appointments = allAppointments.filter(cita => {
+                    const asignado = cita.admin_asignado;
+                    // Mostrar si es "cualquiera" o está asignada a este admin
+                    return asignado === 'cualquiera' || asignado === currentAdminUid;
+                }).sort((a, b) => 
+                    new Date(b.fechaCreacion || 0) - new Date(a.fechaCreacion || 0)
+                );
+            } else {
+                // Fallback: mostrar todas
+                appointments = allAppointments.sort((a, b) => 
+                    new Date(b.fechaCreacion || 0) - new Date(a.fechaCreacion || 0)
+                );
+            }
 
             renderDashboardAppointments();
             renderAppointmentsTable();
@@ -85,7 +103,7 @@ function syncWithFirebase() {
     onValue(usersRef, (snapshot) => {
         try {
             const users = sanitizeData(snapshot.val()) || {};
-            clients = Object.values(users).filter(u => u.role !== 'administrador').map(u => ({
+            clients = Object.values(users).filter(u => u.role !== 'administrador' && u.role !== 'editor' && u.role !== 'visor').map(u => ({
                 id: u.uid || '',
                 nombre: u.nombre || '',
                 apellidos: u.apellidos || '',
@@ -621,6 +639,7 @@ window.checkPasswordStrength = function(password) {
 
     if (password.length === 0) {
         hint.textContent = 'La contraseña debe tener al menos 6 caracteres';
+        hint.style.color = 'var(--admin-text-muted)';
     } else if (strength <= 2) {
         bar.classList.add('weak');
         hint.textContent = 'Contraseña débil - Añada mayúsculas, números o símbolos';
