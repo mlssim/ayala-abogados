@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Admin - Ayala Abogados</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0d1117;
+            color: #e6edf3;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: #161b22;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+            border: 1px solid #30363d;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #f0f6fc; }
+        .subtitle { color: #8b949e; margin-bottom: 30px; font-size: 0.95rem; }
+        .step {
+            background: #0d1117;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border-left: 4px solid #238636;
+            transition: all 0.3s;
+        }
+        .step.error { border-left-color: #f85149; }
+        .step.warning { border-left-color: #d29922; }
+        .step.success { border-left-color: #2ea043; }
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .step-title { font-weight: 600; font-size: 1.05rem; }
+        .step-status { font-size: 0.85rem; padding: 4px 12px; border-radius: 20px; }
+        .step-status.pending { background: #1f2937; color: #8b949e; }
+        .step-status.success { background: #0d2b1a; color: #2ea043; }
+        .step-status.error { background: #2d0a0a; color: #f85149; }
+        .step-detail { color: #8b949e; font-size: 0.9rem; line-height: 1.6; }
+        .step-detail code { 
+            background: #161b22; 
+            padding: 2px 8px; 
+            border-radius: 4px; 
+            font-family: monospace;
+            color: #d2a8ff;
+            font-size: 0.85rem;
+        }
+        .btn {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            width: 100%;
+            margin-top: 8px;
+        }
+        .btn:hover { background: #2ea043; transform: translateY(-1px); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn.danger { background: #da3633; }
+        .btn.danger:hover { background: #f85149; }
+        .log {
+            background: #0d1117;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.85rem;
+            border: 1px solid #30363d;
+        }
+        .log-entry { padding: 4px 0; border-bottom: 1px solid #1c2128; }
+        .log-entry.success { color: #2ea043; }
+        .log-entry.error { color: #f85149; }
+        .log-entry.info { color: #58a6ff; }
+        .log-entry.warning { color: #d29922; }
+        .loader {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #1f2937;
+            border-top-color: #238636;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .flex { display: flex; gap: 10px; }
+        .flex .btn { flex: 1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix Administrador</h1>
+        <p class="subtitle">Sincroniza Firebase Authentication con Realtime Database</p>
+
+        <div id="steps">
+            <div class="step" id="step1">
+                <div class="step-header">
+                    <span class="step-title">1. Verificar usuario en Authentication</span>
+                    <span class="step-status pending" id="status1">⏳ Pendiente</span>
+                </div>
+                <div class="step-detail" id="detail1">Comprobando si <code>monicahernandezprieto@icam.es</code> existe...</div>
+            </div>
+
+            <div class="step" id="step2">
+                <div class="step-header">
+                    <span class="step-title">2. Verificar registro en Database</span>
+                    <span class="step-status pending" id="status2">⏳ Pendiente</span>
+                </div>
+                <div class="step-detail" id="detail2">Buscando el UID correcto en la base de datos...</div>
+            </div>
+
+            <div class="step" id="step3">
+                <div class="step-header">
+                    <span class="step-title">3. Sincronizar datos</span>
+                    <span class="step-status pending" id="status3">⏳ Pendiente</span>
+                </div>
+                <div class="step-detail" id="detail3">Corrigiendo inconsistencias...</div>
+            </div>
+        </div>
+
+        <div class="flex">
+            <button class="btn" id="runBtn">🚀 Ejecutar Fix</button>
+            <button class="btn danger" id="resetBtn">🔄 Resetear y Recrear</button>
+        </div>
+
+        <div class="log" id="log">
+            <div class="log-entry info">📋 Esperando acción...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth } from '../js/firebase-config.js';
+        import { 
+            signInWithEmailAndPassword,
+            createUserWithEmailAndPassword,
+            sendPasswordResetEmail,
+            fetchSignInMethodsForEmail,
+            deleteUser
+        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { ref, get, set, remove, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+        import { db } from '../js/firebase-config.js';
+
+        const ADMIN_EMAIL = 'monicahernandezprieto@icam.es';
+        const ADMIN_PASSWORD = 'Victoria09!';
+        const ADMIN_DATA = {
+            activo: true,
+            apellidos: 'Hernández Prieto',
+            cargo: 'Abogado',
+            createdAt: new Date().toISOString(),
+            createdBy: 'manual_fix',
+            dni: '50449151P',
+            email: ADMIN_EMAIL,
+            nombre: 'Monica',
+            password: ADMIN_PASSWORD,
+            role: 'administrador',
+            telefono: '679448261'
+        };
+
+        // Función para loguear
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const time = new Date().toLocaleTimeString();
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+            entry.textContent = `${icons[type] || '•'} [${time}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function updateStep(id, status, detail) {
+            const step = document.getElementById(`step${id}`);
+            const statusEl = document.getElementById(`status${id}`);
+            const detailEl = document.getElementById(`detail${id}`);
+            
+            step.className = `step ${status}`;
+            statusEl.className = `step-status ${status}`;
+            const texts = { success: '✅ Éxito', error: '❌ Error', warning: '⚠️ Advertencia', pending: '⏳ Pendiente' };
+            statusEl.textContent = texts[status] || status;
+            if (detail) detailEl.textContent = detail;
+        }
+
+        async function fixAdmin() {
+            const runBtn = document.getElementById('runBtn');
+            runBtn.disabled = true;
+            runBtn.textContent = '⏳ Ejecutando...';
+            
+            try {
+                log('🚀 Iniciando proceso de corrección...', 'info');
+                
+                // Step 1: Verificar Auth
+                log('🔍 Verificando Firebase Authentication...', 'info');
+                let methods = [];
+                try {
+                    methods = await fetchSignInMethodsForEmail(auth, ADMIN_EMAIL);
+                } catch (e) {
+                    log(`Error al verificar: ${e.message}`, 'error');
+                }
+                
+                const existsInAuth = methods.length > 0;
+                log(`Usuario en Auth: ${existsInAuth ? 'SÍ' : 'NO'}`, existsInAuth ? 'success' : 'warning');
+                updateStep(1, existsInAuth ? 'success' : 'warning', 
+                    existsInAuth ? '✅ Usuario existe en Authentication' : '⚠️ Usuario NO existe en Authentication');
+                
+                // Step 2: Verificar DB
+                log('🔍 Verificando Realtime Database...', 'info');
+                const adminsSnap = await get(ref(db, 'administradores'));
+                const admins = adminsSnap.val() || {};
+                
+                let foundUid = null;
+                let foundData = null;
+                for (const [uid, data] of Object.entries(admins)) {
+                    if (data.email === ADMIN_EMAIL) {
+                        foundUid = uid;
+                        foundData = data;
+                        break;
+                    }
+                }
+                
+                const existsInDB = foundUid !== null;
+                log(`Usuario en DB: ${existsInDB ? 'SÍ' : 'NO'} (UID: ${foundUid || 'N/A'})`, existsInDB ? 'success' : 'warning');
+                updateStep(2, existsInDB ? 'success' : 'warning',
+                    existsInDB ? `✅ Registro encontrado con UID: ${foundUid}` : '⚠️ No hay registro en DB');
+
+                // Step 3: Sincronizar
+                log('🔄 Sincronizando datos...', 'info');
+                
+                if (!existsInAuth && !existsInDB) {
+                    // Caso: No existe en ningún lado - Crear todo
+                    log('📝 Creando usuario en Authentication...', 'info');
+                    const userCred = await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
+                    const uid = userCred.user.uid;
+                    log(`✅ Usuario creado con UID: ${uid}`, 'success');
+                    
+                    log('📝 Creando registro en Database...', 'info');
+                    await set(ref(db, `administradores/${uid}`), ADMIN_DATA);
+                    log('✅ Registro creado en Database', 'success');
+                    
+                    updateStep(3, 'success', `✅ Todo creado correctamente. UID: ${uid}`);
+                    log('🎉 ¡Administrador configurado exitosamente!', 'success');
+                    
+                } else if (existsInAuth && !existsInDB) {
+                    // Caso: Existe en Auth pero no en DB
+                    log('📝 Creando registro en Database...', 'info');
+                    // Necesitamos obtener el UID del usuario en Auth
+                    try {
+                        // Intentamos login para obtener el UID
+                        const cred = await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
+                        const uid = cred.user.uid;
+                        log(`✅ Autenticado. UID: ${uid}`, 'success');
+                        
+                        await set(ref(db, `administradores/${uid}`), ADMIN_DATA);
+                        log('✅ Registro creado en Database', 'success');
+                        updateStep(3, 'success', `✅ Registro creado con UID: ${uid}`);
+                        log('🎉 ¡Administrador sincronizado!', 'success');
+                    } catch (e) {
+                        log(`Error al autenticar: ${e.message}`, 'error');
+                        updateStep(3, 'error', '❌ Error al autenticar');
+                    }
+                    
+                } else if (!existsInAuth && existsInDB) {
+                    // Caso: Existe en DB pero no en Auth - RE-CREAR
+                    log('⚠️ El usuario existe en DB pero no en Auth. Re-creando...', 'warning');
+                    log('🗑️ Eliminando registro antiguo de DB...', 'warning');
+                    await remove(ref(db, `administradores/${foundUid}`));
+                    
+                    log('📝 Creando usuario en Authentication...', 'info');
+                    const userCred = await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
+                    const uid = userCred.user.uid;
+                    log(`✅ Usuario creado con UID: ${uid}`, 'success');
+                    
+                    log('📝 Creando registro en Database...', 'info');
+                    await set(ref(db, `administradores/${uid}`), ADMIN_DATA);
+                    log('✅ Registro creado en Database', 'success');
+                    
+                    updateStep(3, 'success', `✅ Re-creado correctamente. Nuevo UID: ${uid}`);
+                    log('🎉 ¡Administrador re-creado exitosamente!', 'success');
+                    
+                } else {
+                    // Caso: Existe en ambos lados
+                    log('✅ Usuario existe en ambos sistemas', 'success');
+                    
+                    // Verificar si los UIDs coinciden
+                    const authUid = await getAuthUid();
+                    if (authUid !== foundUid) {
+                        log(`⚠️ Discrepancia de UIDs: Auth=${authUid}, DB=${foundUid}`, 'warning');
+                        log('📝 Actualizando DB con UID correcto...', 'info');
+                        
+                        // Mover datos al UID correcto
+                        await set(ref(db, `administradores/${authUid}`), {
+                            ...foundData,
+                            updatedAt: new Date().toISOString()
+                        });
+                        await remove(ref(db, `administradores/${foundUid}`));
+                        log(`✅ Datos movidos de ${foundUid} a ${authUid}`, 'success');
+                        updateStep(3, 'success', `✅ Sincronizado. UID correcto: ${authUid}`);
+                    } else {
+                        log('✅ Los UIDs coinciden correctamente', 'success');
+                        updateStep(3, 'success', '✅ Todo está sincronizado correctamente');
+                    }
+                    
+                    // Resetear contraseña por si acaso
+                    try {
+                        await sendPasswordResetEmail(auth, ADMIN_EMAIL);
+                        log('📧 Email de reseteo enviado (por si la contraseña no funciona)', 'info');
+                    } catch (e) {
+                        log(`No se pudo enviar email: ${e.message}`, 'warning');
+                    }
+                }
+                
+                log('✨ Proceso completado. Prueba iniciar sesión.', 'success');
+                
+            } catch (error) {
+                log(`❌ Error en el proceso: ${error.message}`, 'error');
+                console.error(error);
+                updateStep(3, 'error', `❌ Error: ${error.message}`);
+            } finally {
+                runBtn.disabled = false;
+                runBtn.textContent = '🚀 Ejecutar Fix';
+            }
+        }
+
+        async function getAuthUid() {
+            try {
+                const cred = await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
+                return cred.user.uid;
+            } catch {
+                return null;
+            }
+        }
+
+        async function resetAndRecreate() {
+            if (!confirm('⚠️ Esto eliminará el usuario actual y lo recreará. ¿Continuar?')) return;
+            
+            const resetBtn = document.getElementById('resetBtn');
+            resetBtn.disabled = true;
+            resetBtn.textContent = '⏳ Procesando...';
+            
+            try {
+                log('🔄 Resetear y Recrear...', 'warning');
+                
+                // Eliminar de Auth si existe
+                try {
+                    const methods = await fetchSignInMethodsForEmail(auth, ADMIN_EMAIL);
+                    if (methods.length > 0) {
+                        // Solo podemos eliminar si estamos autenticados
+                        try {
+                            const cred = await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
+                            await deleteUser(cred.user);
+                            log('🗑️ Usuario eliminado de Authentication', 'success');
+                        } catch (e) {
+                            log(`No se pudo eliminar de Auth: ${e.message}`, 'warning');
+                        }
+                    }
+                } catch (e) {
+                    log(`Error en Auth: ${e.message}`, 'warning');
+                }
+                
+                // Eliminar de DB
+                const adminsSnap = await get(ref(db, 'administradores'));
+                const admins = adminsSnap.val() || {};
+                for (const [uid, data] of Object.entries(admins)) {
+                    if (data.email === ADMIN_EMAIL) {
+                        await remove(ref(db, `administradores/${uid}`));
+                        log(`🗑️ Eliminado registro de DB: ${uid}`, 'success');
+                    }
+                }
+                
+                // Crear de nuevo
+                log('📝 Creando usuario fresco...', 'info');
+                const userCred = await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
+                const uid = userCred.user.uid;
+                log(`✅ Usuario creado con UID: ${uid}`, 'success');
+                
+                await set(ref(db, `administradores/${uid}`), ADMIN_DATA);
+                log('✅ Registro creado en Database', 'success');
+                
+                log('🎉 ¡Usuario re-creado exitosamente!', 'success');
+                updateStep(3, 'success', `✅ Re-creado. UID: ${uid}`);
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            } finally {
+                resetBtn.disabled = false;
+                resetBtn.textContent = '🔄 Resetear y Recrear';
+            }
+        }
+
+        // Ejecutar diagnóstico inicial
+        async function initialDiagnostic() {
+            log('🔍 Diagnóstico inicial...', 'info');
+            try {
+                const methods = await fetchSignInMethodsForEmail(auth, ADMIN_EMAIL);
+                const exists = methods.length > 0;
+                log(`Auth: ${exists ? '✅ Usuario existe' : '❌ Usuario NO existe'}`, exists ? 'success' : 'error');
+                
+                const adminsSnap = await get(ref(db, 'administradores'));
+                const admins = adminsSnap.val() || {};
+                let found = false;
+                for (const [uid, data] of Object.entries(admins)) {
+                    if (data.email === ADMIN_EMAIL) {
+                        found = true;
+                        log(`DB: ✅ Encontrado con UID: ${uid}`, 'success');
+                        break;
+                    }
+                }
+                if (!found) log('DB: ❌ No encontrado', 'error');
+            } catch (e) {
+                log(`❌ Error en diagnóstico: ${e.message}`, 'error');
+            }
+        }
+
+        // Conectar botones
+        document.getElementById('runBtn').addEventListener('click', fixAdmin);
+        document.getElementById('resetBtn').addEventListener('click', resetAndRecreate);
+        
+        // Ejecutar diagnóstico al cargar
+        await initialDiagnostic();
+    </script>
+</body>
+</html>
