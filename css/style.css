@@ -1009,6 +1009,12 @@ body.menu-open { overflow: hidden; }
     .service-card { padding: 28px 20px; }
 }
 
+
+/* ===== FIX: Stat numbers with + prefix ===== */
+.stat-number.plus::before {
+    content: '+ ';
+}
+
 /* ===== PRINT STYLES ===== */
 @media print {
     .header, .scroll-top, .theme-toggle, .menu-toggle, .mobile-nav, .mobile-nav-overlay { display: none !important; }
@@ -1162,6 +1168,12 @@ img { max-width: 100%; height: auto; }
 /* ===== PREVENIR OVERFLOW ===== */
 body { overflow-x: hidden; }
 img, iframe, video, embed, object { max-width: 100%; }
+
+
+/* ===== FIX: Stat numbers with + prefix ===== */
+.stat-number.plus::before {
+    content: '+ ';
+}
 
 /* ===== PRINT STYLES ===== */
 @media print {

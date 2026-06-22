@@ -74,8 +74,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Toggle al hacer clic en el botón hamburguesa
         menuToggle.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
             toggleMenu();
         });
 
