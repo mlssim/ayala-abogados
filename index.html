@@ -578,11 +578,12 @@
     </button>
 
     <!-- Scripts - Firebase Modules -->
+    <!-- Cargar en orden: firebase-config, auth-service, auth-ui, email-service, main -->
     <script type="module" src="js/firebase-config.js"></script>
-   
     <script type="module" src="js/auth-service.js"></script>
     <script type="module" src="js/auth-ui.js"></script>
     <script type="module" src="js/email-service.js"></script>
+    <!-- main.js se carga como script normal porque usa DOMContentLoaded -->
     <script src="js/main.js"></script>
 </body>
 </html>
