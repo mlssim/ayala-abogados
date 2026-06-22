@@ -10,13 +10,16 @@ import {
     onValue, 
     get, 
     update, 
-    remove 
+    remove,
+    set,
+    push
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 // ===== DATOS GLOBALES =====
 let appointments = [];
 let clients = [];
 let notifications = [];
+let admins = [];
 let calendarCurrentMonth = new Date().getMonth();
 let calendarCurrentYear = new Date().getFullYear();
 let appointmentsUnsubscribe = null;
@@ -114,6 +117,32 @@ function syncWithFirebase() {
             updateStats();
         } catch (error) {
             console.error('Error al procesar notificaciones:', error);
+        }
+    });
+
+    // Escuchar administradores
+    const adminsRef = ref(db, 'usuarios');
+    onValue(adminsRef, (snapshot) => {
+        try {
+            const users = sanitizeData(snapshot.val()) || {};
+            admins = Object.entries(users)
+                .filter(([uid, u]) => u.role === 'administrador' || u.role === 'editor' || u.role === 'visor')
+                .map(([uid, u]) => ({
+                    uid: uid,
+                    nombre: u.nombre || '',
+                    apellidos: u.apellidos || '',
+                    dni: u.dni || 'N/D',
+                    telefono: u.telefono || '',
+                    email: u.email || '',
+                    cargo: u.cargo || 'Administrador',
+                    role: u.role || 'administrador',
+                    active: u.active !== false,
+                    createdAt: u.createdAt || null,
+                    lastLogin: u.lastLogin || null
+                }));
+            renderAdminsList();
+        } catch (error) {
+            console.error('Error al procesar administradores:', error);
         }
     });
 }
@@ -326,6 +355,286 @@ function renderNotifications() {
         </div>
     `).join('');
 }
+
+// ========== RENDERIZAR LISTA DE ADMINISTRADORES ==========
+function renderAdminsList() {
+    const container = document.getElementById('adminsList');
+    if (!container) return;
+
+    if (admins.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px; color: var(--admin-text-muted);">
+                <i class="fas fa-user-shield" style="font-size: 3rem; display: block; margin-bottom: 16px; opacity: 0.5;"></i>
+                <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; color: var(--admin-text);">No hay administradores registrados</div>
+                <div style="font-size: 0.9rem; max-width: 400px; margin: 0 auto;">
+                    Use el formulario superior para crear el primer administrador del sistema.
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    admins.forEach(admin => {
+        const iniciales = `${(admin.nombre?.charAt(0) || 'A')}${(admin.apellidos?.charAt(0) || 'D')}`;
+        const nombreCompleto = `${admin.nombre} ${admin.apellidos || ''}`.trim();
+        const estadoClass = admin.active ? 'confirmed' : 'cancelled';
+        const estadoTexto = admin.active ? 'Activo' : 'Inactivo';
+        const rolTexto = admin.role === 'administrador' ? 'Admin Total' : admin.role === 'editor' ? 'Editor' : 'Visor';
+        const rolColor = admin.role === 'administrador' ? 'var(--admin-primary)' : admin.role === 'editor' ? 'var(--admin-warning)' : 'var(--admin-info)';
+
+        html += `
+            <div class="admin-list-item">
+                <div class="admin-list-avatar">${iniciales}</div>
+                <div class="admin-list-info">
+                    <div class="name">${nombreCompleto}</div>
+                    <div class="email">
+                        <i class="fas fa-envelope" style="font-size: 0.7rem; margin-right: 4px;"></i>${admin.email}
+                        <span style="margin: 0 8px;">|</span>
+                        <i class="fas fa-phone" style="font-size: 0.7rem; margin-right: 4px;"></i>${admin.telefono || 'N/D'}
+                        <span style="margin: 0 8px;">|</span>
+                        <i class="fas fa-id-card" style="font-size: 0.7rem; margin-right: 4px;"></i>${admin.dni || 'N/D'}
+                    </div>
+                    <div style="margin-top: 6px; display: flex; gap: 8px; align-items: center;">
+                        <span class="status-badge ${estadoClass}" style="font-size: 0.7rem;">${estadoTexto}</span>
+                        <span style="font-size: 0.75rem; color: ${rolColor}; font-weight: 600; background: ${rolColor}15; padding: 2px 8px; border-radius: 4px;">${rolTexto}</span>
+                        <span style="font-size: 0.75rem; color: var(--admin-text-muted);">${admin.cargo || ''}</span>
+                    </div>
+                </div>
+                <div class="admin-list-actions">
+                    <button class="btn-icon edit" title="Editar" onclick="window.editAdmin('${admin.uid}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn-icon" title="Eliminar" onclick="window.deleteAdmin('${admin.uid}', '${nombreCompleto.replace(/'/g, "\'")}')"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+// ========== CREAR NUEVO ADMINISTRADOR ==========
+window.createNewAdmin = async function() {
+    const nombre = document.getElementById('admin-nombre').value.trim();
+    const apellidos = document.getElementById('admin-apellidos').value.trim();
+    const dni = document.getElementById('admin-dni').value.trim();
+    const telefono = document.getElementById('admin-telefono').value.trim();
+    const email = document.getElementById('admin-email').value.trim();
+    const cargo = document.getElementById('admin-cargo').value.trim();
+    const password = document.getElementById('admin-password').value;
+    const active = document.getElementById('admin-active').value === 'true';
+    const role = document.getElementById('admin-permisos').value;
+
+    // Validaciones
+    if (!nombre || !apellidos || !dni || !telefono || !email || !password) {
+        showAdminNotification('error', 'Campos requeridos', 'Por favor complete todos los campos obligatorios (*).');
+        return;
+    }
+
+    if (password.length < 6) {
+        showAdminNotification('error', 'Contraseña débil', 'La contraseña debe tener al menos 6 caracteres.');
+        return;
+    }
+
+    // Validar email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showAdminNotification('error', 'Email inválido', 'Por favor introduzca un email válido.');
+        return;
+    }
+
+    try {
+        // Generar un UID único para el nuevo admin
+        const newUid = 'admin_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+        const adminData = {
+            uid: newUid,
+            nombre: nombre,
+            apellidos: apellidos,
+            dni: dni,
+            telefono: telefono,
+            email: email,
+            cargo: cargo || 'Administrador',
+            role: role,
+            active: active,
+            password: password, // Nota: en producción debería hashearse
+            createdAt: new Date().toISOString(),
+            createdBy: 'manual',
+            lastLogin: null
+        };
+
+        await set(ref(db, 'usuarios/' + newUid), adminData);
+
+        showAdminNotification('success', 'Administrador creado', `${nombre} ${apellidos} ha sido añadido como ${role === 'administrador' ? 'Administrador' : role === 'editor' ? 'Editor' : 'Visor'}.`);
+
+        // Limpiar formulario
+        document.getElementById('newAdminForm').reset();
+        document.getElementById('passwordStrengthBar').className = 'password-strength-bar';
+
+    } catch (error) {
+        console.error('Error al crear administrador:', error);
+        showAdminNotification('error', 'Error', 'No se pudo crear el administrador. Inténtelo de nuevo.');
+    }
+};
+
+// ========== EDITAR ADMINISTRADOR ==========
+window.editAdmin = async function(uid) {
+    try {
+        const snapshot = await get(ref(db, 'usuarios/' + uid));
+        if (!snapshot.exists()) {
+            showAdminNotification('error', 'Error', 'No se encontró el administrador.');
+            return;
+        }
+
+        const admin = sanitizeData(snapshot.val());
+
+        // Crear modal de edición
+        const existing = document.getElementById('editAdminModal');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'editAdminModal';
+        overlay.className = 'modal-overlay';
+
+        const modal = document.createElement('div');
+        modal.className = 'modal-content';
+        modal.style.maxWidth = '600px';
+
+        modal.innerHTML = `
+            <button class="modal-close" onclick="closeEditAdminModal()"><i class="fas fa-times-circle"></i></button>
+            <h2 class="modal-title"><i class="fas fa-user-edit"></i> Editar Administrador</h2>
+            <p class="modal-subtitle">${admin.nombre} ${admin.apellidos || ''}</p>
+
+            <div class="admin-form-grid">
+                <div class="settings-group">
+                    <label class="settings-label">Nombre</label>
+                    <input type="text" id="edit-admin-nombre" class="settings-input" value="${admin.nombre || ''}">
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">Apellidos</label>
+                    <input type="text" id="edit-admin-apellidos" class="settings-input" value="${admin.apellidos || ''}">
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">DNI / NIE</label>
+                    <input type="text" id="edit-admin-dni" class="settings-input" value="${admin.dni || ''}">
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">Teléfono</label>
+                    <input type="tel" id="edit-admin-telefono" class="settings-input" value="${admin.telefono || ''}">
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">Email</label>
+                    <input type="email" id="edit-admin-email" class="settings-input" value="${admin.email || ''}">
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">Cargo</label>
+                    <input type="text" id="edit-admin-cargo" class="settings-input" value="${admin.cargo || ''}">
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">Estado</label>
+                    <select id="edit-admin-active" class="filter-select" style="width: 100%;">
+                        <option value="true" ${admin.active !== false ? 'selected' : ''}>Activo</option>
+                        <option value="false" ${admin.active === false ? 'selected' : ''}>Inactivo</option>
+                    </select>
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">Nivel de permisos</label>
+                    <select id="edit-admin-role" class="filter-select" style="width: 100%;">
+                        <option value="administrador" ${admin.role === 'administrador' ? 'selected' : ''}>Administrador Total</option>
+                        <option value="editor" ${admin.role === 'editor' ? 'selected' : ''}>Editor</option>
+                        <option value="visor" ${admin.role === 'visor' ? 'selected' : ''}>Visor</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 24px;">
+                <button class="btn-admin btn-admin-outline" onclick="closeEditAdminModal()">Cancelar</button>
+                <button class="btn-admin btn-admin-primary" onclick="window.saveAdminChanges('${uid}')"><i class="fas fa-save"></i> Guardar Cambios</button>
+            </div>
+        `;
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) closeEditAdminModal(); });
+
+    } catch (error) {
+        console.error('Error al cargar admin:', error);
+        showAdminNotification('error', 'Error', 'No se pudo cargar los datos del administrador.');
+    }
+};
+
+window.closeEditAdminModal = function() {
+    const modal = document.getElementById('editAdminModal');
+    if (modal) modal.remove();
+};
+
+window.saveAdminChanges = async function(uid) {
+    try {
+        const updates = {
+            nombre: document.getElementById('edit-admin-nombre').value.trim(),
+            apellidos: document.getElementById('edit-admin-apellidos').value.trim(),
+            dni: document.getElementById('edit-admin-dni').value.trim(),
+            telefono: document.getElementById('edit-admin-telefono').value.trim(),
+            email: document.getElementById('edit-admin-email').value.trim(),
+            cargo: document.getElementById('edit-admin-cargo').value.trim(),
+            active: document.getElementById('edit-admin-active').value === 'true',
+            role: document.getElementById('edit-admin-role').value,
+            updatedAt: new Date().toISOString()
+        };
+
+        await update(ref(db, 'usuarios/' + uid), updates);
+        closeEditAdminModal();
+        showAdminNotification('success', 'Actualizado', 'Los datos del administrador han sido actualizados.');
+
+    } catch (error) {
+        console.error('Error al guardar:', error);
+        showAdminNotification('error', 'Error', 'No se pudieron guardar los cambios.');
+    }
+};
+
+// ========== ELIMINAR ADMINISTRADOR ==========
+window.deleteAdmin = async function(uid, nombre) {
+    if (!confirm(`¿Eliminar al administrador "${nombre}"?\n\nEsta acción no se puede deshacer.`)) return;
+
+    try {
+        await remove(ref(db, 'usuarios/' + uid));
+        showAdminNotification('success', 'Eliminado', `El administrador "${nombre}" ha sido eliminado.`);
+    } catch (error) {
+        console.error('Error al eliminar admin:', error);
+        showAdminNotification('error', 'Error', 'No se pudo eliminar el administrador.');
+    }
+};
+
+// ========== FUERZA DE CONTRASEÑA ==========
+window.checkPasswordStrength = function(password) {
+    const bar = document.getElementById('passwordStrengthBar');
+    const hint = document.getElementById('passwordHint');
+    if (!bar || !hint) return;
+
+    let strength = 0;
+    if (password.length >= 6) strength++;
+    if (password.length >= 10) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+
+    bar.className = 'password-strength-bar';
+
+    if (password.length === 0) {
+        hint.textContent = 'La contraseña debe tener al menos 6 caracteres';
+    } else if (strength <= 2) {
+        bar.classList.add('weak');
+        hint.textContent = 'Contraseña débil - Añada mayúsculas, números o símbolos';
+        hint.style.color = '#ef4444';
+    } else if (strength <= 4) {
+        bar.classList.add('medium');
+        hint.textContent = 'Contraseña media - Puede mejorarla con más caracteres';
+        hint.style.color = '#f59e0b';
+    } else {
+        bar.classList.add('strong');
+        hint.textContent = 'Contraseña fuerte - Excelente seguridad';
+        hint.style.color = '#10b981';
+    }
+};
 
 // ========== ESTADÍSTICAS ==========
 function updateStats() {
@@ -580,6 +889,21 @@ window.editClient = function(id) {
     alert('Función de edición de cliente en desarrollo.');
 };
 
+// ========== LOGOUT ==========
+window.logoutAdmin = async function() {
+    if (!confirm('¿Cerrar sesión?')) return;
+    try {
+        // Importar auth dinámicamente
+        const { auth } = await import('../../js/firebase-config.js');
+        const { signOut } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+        await signOut(auth);
+        window.location.href = 'login.html';
+    } catch (error) {
+        console.error('Error al cerrar sesión:', error);
+        window.location.href = 'login.html';
+    }
+};
+
 // ========== NOTIFICACIÓN ADMIN ==========
 function showAdminNotification(type, title, message) {
     const existing = document.querySelector('.admin-notification');
@@ -677,7 +1001,8 @@ document.addEventListener('DOMContentLoaded', function() {
         reports:'Informes', 
         notifications:'Notificaciones', 
         content:'Contenido Web', 
-        settings:'Configuración' 
+        settings:'Configuración',
+        admins:'Administradores'
     };
 
     navItems.forEach(item => {
