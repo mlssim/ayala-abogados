@@ -391,7 +391,7 @@
             });
         });
 
-        // Login form - CORREGIDO: añadido await
+        // Login form
         const loginForm = modal.querySelector('#loginForm');
         loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -408,7 +408,7 @@
             btnLoading.style.display = 'inline';
             submitBtn.disabled = true;
 
-            const result = await window.AuthService.login(email, password, remember); // ← await añadido
+            const result = await window.AuthService.login(email, password, remember);
 
             btnText.style.display = 'inline';
             btnLoading.style.display = 'none';
@@ -417,13 +417,14 @@
             if (result.success) {
                 showNotification('success', '¡Bienvenido!', `Hola ${result.user.nombre}, ha iniciado sesión correctamente.`);
                 closeAuthModal();
-                updateAuthUI();
+                // Forzar actualización de la UI
+                setTimeout(() => updateAuthUI(), 300);
             } else {
                 showNotification('error', 'Error de acceso', result.error);
             }
         });
 
-        // Register form - CORREGIDO: añadido await
+        // Register form
         const registerForm = modal.querySelector('#registerForm');
         registerForm.addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -446,7 +447,7 @@
             btnLoading.style.display = 'inline';
             submitBtn.disabled = true;
 
-            const result = await window.AuthService.register(userData); // ← await añadido
+            const result = await window.AuthService.register(userData);
 
             btnText.style.display = 'inline';
             btnLoading.style.display = 'none';
@@ -455,7 +456,8 @@
             if (result.success) {
                 showNotification('success', '¡Registro completado!', `Bienvenido ${result.user.nombre}, su cuenta ha sido creada.`);
                 closeAuthModal();
-                updateAuthUI();
+                // Forzar actualización de la UI
+                setTimeout(() => updateAuthUI(), 300);
             } else {
                 showNotification('error', 'Error en el registro', result.error);
             }
@@ -487,6 +489,7 @@
         if (!session) return null;
 
         const menu = createElement('div', 'auth-user-menu', '');
+        menu.id = 'authUserMenu';
         menu.style.cssText = `
             position: relative;
             display: flex;
@@ -498,8 +501,15 @@
             ? '<span style="background: var(--accent-gold, #c9a227); color: #1a202c; font-size: 0.65rem; padding: 2px 8px; border-radius: 10px; font-weight: 700; text-transform: uppercase;">Admin</span>' 
             : '';
 
+        const roleMap = {
+            'administrador': 'Administrador',
+            'editor': 'Abogado',
+            'usuario': 'Cliente'
+        };
+        const roleDisplay = roleMap[session.role] || 'Cliente';
+
         menu.innerHTML = `
-            <button class="auth-user-toggle" style="
+            <button class="auth-user-toggle" id="authUserToggle" style="
                 display: flex;
                 align-items: center;
                 gap: 8px;
@@ -533,7 +543,7 @@
                 </span>
             </button>
 
-            <div class="auth-user-dropdown" style="
+            <div class="auth-user-dropdown" id="authUserDropdown" style="
                 position: absolute;
                 top: calc(100% + 8px);
                 right: 0;
@@ -552,6 +562,7 @@
                 <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-light, #edf2f7);">
                     <div style="font-weight: 600; color: var(--text-primary, #1a202c); font-size: 0.9rem;">${session.nombre} ${session.apellidos}</div>
                     <div style="font-size: 0.8rem; color: var(--text-muted, #718096);">${session.email}</div>
+                    <div style="font-size: 0.75rem; color: var(--accent-gold, #c9a227); margin-top: 2px;">${roleDisplay}</div>
                 </div>
                 <a href="pages/perfil.html" style="display: flex; align-items: center; gap: 10px; padding: 10px 16px; color: var(--text-secondary, #4a5568); font-size: 0.9rem; transition: all 0.15s; text-decoration: none;">
                     <i class="fas fa-user" style="width: 18px; color: var(--accent-gold, #c9a227);"></i> Mi Perfil
@@ -562,7 +573,7 @@
                 </a>
                 ` : ''}
                 <div style="border-top: 1px solid var(--border-light, #edf2f7); margin: 4px 0;"></div>
-                <button class="auth-logout-btn" style="
+                <button class="auth-logout-btn" id="authLogoutBtn" style="
                     display: flex;
                     align-items: center;
                     gap: 10px;
@@ -582,8 +593,9 @@
             </div>
         `;
 
-        const toggle = menu.querySelector('.auth-user-toggle');
-        const dropdown = menu.querySelector('.auth-user-dropdown');
+        // Eventos del menú
+        const toggle = menu.querySelector('#authUserToggle');
+        const dropdown = menu.querySelector('#authUserDropdown');
 
         toggle.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -599,15 +611,20 @@
             }
         });
 
-        document.addEventListener('click', function() {
-            dropdown.style.opacity = '0';
-            dropdown.style.visibility = 'hidden';
-            dropdown.style.transform = 'translateY(-10px)';
+        // Cerrar dropdown al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (!menu.contains(e.target)) {
+                dropdown.style.opacity = '0';
+                dropdown.style.visibility = 'hidden';
+                dropdown.style.transform = 'translateY(-10px)';
+            }
         });
 
-        menu.querySelector('.auth-logout-btn').addEventListener('click', function() {
+        // Cerrar sesión - CORREGIDO
+        menu.querySelector('#authLogoutBtn').addEventListener('click', function() {
             window.AuthService.logout();
             showNotification('success', 'Sesión cerrada', 'Ha cerrado sesión correctamente.');
+            // Actualizar UI inmediatamente
             updateAuthUI();
         });
 
@@ -617,6 +634,7 @@
     // ===== BOTÓN DE LOGIN =====
     function createLoginButton() {
         const btn = createElement('button', 'auth-login-btn', '');
+        btn.id = 'authLoginBtn';
         btn.style.cssText = `
             display: flex;
             align-items: center;
@@ -655,9 +673,14 @@
         const container = document.getElementById('authContainer');
         if (!container) return;
 
+        // Limpiar el contenedor manteniendo el mismo elemento
         container.innerHTML = '';
 
-        if (window.AuthService.isAuthenticated()) {
+        // Verificar autenticación
+        const isAuth = window.AuthService.isAuthenticated();
+        const session = window.AuthService.getCurrentSession();
+
+        if (isAuth && session) {
             const userMenu = createUserMenu();
             if (userMenu) container.appendChild(userMenu);
         } else {
@@ -668,19 +691,31 @@
     // ===== INICIALIZACIÓN =====
     function initAuthUI() {
         const headerActions = document.querySelector('.header-actions');
-        if (headerActions) {
-            const authContainer = createElement('div', '');
+        if (!headerActions) return;
+
+        // Verificar si ya existe el contenedor
+        let authContainer = document.getElementById('authContainer');
+        if (!authContainer) {
+            authContainer = createElement('div', '');
             authContainer.id = 'authContainer';
             authContainer.style.cssText = 'display: flex; align-items: center;';
-
+            
             const menuToggle = headerActions.querySelector('.menu-toggle');
             if (menuToggle) {
                 headerActions.insertBefore(authContainer, menuToggle);
             } else {
                 headerActions.appendChild(authContainer);
             }
+        }
 
-            updateAuthUI();
+        // Actualizar UI
+        updateAuthUI();
+
+        // Escuchar cambios en la autenticación
+        if (window.AuthService && window.AuthService.onAuthChange) {
+            window.AuthService.onAuthChange(() => {
+                updateAuthUI();
+            });
         }
 
         addAuthStyles();
@@ -701,13 +736,6 @@
                 width: 60%;
                 height: 2px;
                 background: var(--accent-gold, #c9a227);
-            }
-
-            .auth-user-menu:hover .auth-user-dropdown,
-            .auth-user-dropdown:hover {
-                opacity: 1 !important;
-                visibility: visible !important;
-                transform: translateY(0) !important;
             }
 
             .auth-user-dropdown a:hover,
@@ -731,17 +759,38 @@
             }
 
             @media (max-width: 768px) {
-                .auth-login-btn span { display: none; }
-                .auth-login-btn { padding: 10px 12px !important; }
+                .auth-login-btn { 
+                    padding: 8px 12px !important;
+                    font-size: 0.8rem !important;
+                }
+                .auth-login-btn i { font-size: 0.9rem; }
+                .auth-user-toggle { padding: 6px 12px !important; font-size: 0.8rem !important; }
+                .auth-user-toggle div { width: 28px !important; height: 28px !important; font-size: 0.7rem !important; }
                 .auth-user-toggle span { display: none; }
             }
         `;
         document.head.appendChild(style);
     }
 
-    // CORREGIDO: Esperar 1 segundo a que Firebase confirme auth
+    // CORREGIDO: Esperar a que AuthService esté disponible
     function delayedInit() {
-        setTimeout(initAuthUI, 1000);
+        // Esperar a que AuthService esté disponible
+        const checkAuthService = setInterval(() => {
+            if (window.AuthService) {
+                clearInterval(checkAuthService);
+                initAuthUI();
+                console.log('Auth UI inicializado correctamente');
+            }
+        }, 100);
+
+        // Timeout por si acaso
+        setTimeout(() => {
+            clearInterval(checkAuthService);
+            if (!window.AuthService) {
+                console.warn('AuthService no disponible después de 3 segundos');
+                initAuthUI();
+            }
+        }, 3000);
     }
 
     if (document.readyState === 'loading') {
@@ -750,13 +799,15 @@
         delayedInit();
     }
 
+    // Exponer funciones globales
     window.AuthUI = {
         openLogin: function() { createAuthModal(); switchAuthTab('login'); },
         openRegister: function() { createAuthModal(); switchAuthTab('register'); },
         closeModal: closeAuthModal,
         updateUI: updateAuthUI,
-        showNotification: showNotification
+        showNotification: showNotification,
+        init: initAuthUI
     };
 
-    console.log('Auth UI inicializado');
+    console.log('Auth UI cargado');
 })();
