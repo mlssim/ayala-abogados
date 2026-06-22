@@ -18,77 +18,63 @@
             border-radius: var(--radius-sm);
             object-fit: contain;
         }
-        /* Selector de administrador */
-        .admin-selector {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+        /* Combo desplegable de abogados */
+        .abogado-select-wrapper {
+            position: relative;
         }
-        .admin-option {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            padding: 16px 20px;
+        .abogado-select-wrapper .select-icon {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted, #6b7280);
+            pointer-events: none;
+            font-size: 0.85rem;
+        }
+        .abogado-select {
+            width: 100%;
+            padding: 14px 44px 14px 16px;
             border: 2px solid var(--border-color, #e5e7eb);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: var(--font-body, 'Inter', sans-serif);
+            color: var(--text-primary, #1f2937);
             background: var(--card-bg, #fff);
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .admin-option:hover {
+        .abogado-select:focus {
+            outline: none;
             border-color: var(--accent-gold, #c9a227);
-            background: var(--bg-secondary, #f8fafc);
-        }
-        .admin-option.selected {
-            border-color: var(--accent-gold, #c9a227);
-            background: rgba(201, 162, 39, 0.08);
             box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.15);
         }
-        .admin-option input[type="radio"] {
-            width: 20px;
-            height: 20px;
-            accent-color: var(--accent-gold, #c9a227);
-            flex-shrink: 0;
+        .abogado-select option {
+            padding: 10px;
+            font-size: 0.95rem;
         }
-        .admin-avatar-small {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: var(--primary, #1a365d);
-            color: white;
+        .abogado-select option:first-child {
+            color: var(--text-muted, #6b7280);
+            font-style: italic;
+        }
+        .abogado-label {
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-weight: 500;
             font-size: 0.9rem;
-            font-weight: 600;
-            flex-shrink: 0;
-        }
-        .admin-option-info {
-            flex: 1;
-        }
-        .admin-option-info .name {
-            font-weight: 600;
-            font-size: 0.95rem;
             color: var(--text-primary, #1f2937);
         }
-        .admin-option-info .role {
+        .abogado-label .required {
+            color: #e53e3e;
+        }
+        .abogado-hint {
+            margin-top: 6px;
             font-size: 0.8rem;
             color: var(--text-muted, #6b7280);
-            margin-top: 2px;
-        }
-        .admin-loading {
-            text-align: center;
-            padding: 20px;
-            color: var(--text-muted, #6b7280);
-        }
-        .admin-loading i {
-            margin-right: 8px;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        .fa-spin {
-            animation: spin 1s linear infinite;
         }
         .form-success-message {
             display: none;
@@ -215,15 +201,23 @@
                     <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 32px;">Los campos marcados con <span style="color: #e53e3e;">*</span> son obligatorios.</p>
 
                     <form id="appointmentForm">
-                        <!-- Selector de Abogado/Administrador -->
+                        <!-- COMBO DESPLEGABLE DE ABOGADO -->
                         <div class="form-group">
-                            <label class="form-label">Abogado / Administrador <span class="required">*</span></label>
-                            <div class="admin-selector" id="adminSelector">
-                                <div class="admin-loading">
-                                    <i class="fas fa-spinner fa-spin"></i> Cargando abogados disponibles...
-                                </div>
+                            <label class="abogado-label">
+                                <i class="fas fa-user-tie" style="color: var(--accent-gold);"></i>
+                                Abogado / Administrador <span class="required">*</span>
+                            </label>
+                            <div class="abogado-select-wrapper">
+                                <select class="abogado-select" name="admin_asignado" id="adminAsignado" required>
+                                    <option value="cualquiera">Cualquier abogado disponible</option>
+                                    <!-- Las opciones se cargan dinámicamente desde Firebase -->
+                                </select>
+                                <i class="fas fa-chevron-down select-icon"></i>
                             </div>
-                            <input type="hidden" name="admin_asignado" id="adminAsignado" value="cualquiera">
+                            <div class="abogado-hint">
+                                <i class="fas fa-info-circle" style="font-size: 0.7rem; margin-right: 4px;"></i>
+                                Seleccione un abogado específico o deje "Cualquiera" para que le asignemos el mejor profesional.
+                            </div>
                         </div>
 
                         <div class="form-row">
@@ -423,75 +417,41 @@
         import { db } from "../js/firebase-config.js";
         import { ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-        // ===== CARGAR ADMINISTRADORES DISPONIBLES =====
-        const adminSelector = document.getElementById('adminSelector');
-        const adminAsignadoInput = document.getElementById('adminAsignado');
-        let adminsList = [];
+        // ===== CARGAR ABOGADOS EN EL COMBO =====
+        const adminSelect = document.getElementById('adminAsignado');
 
-        function loadAdmins() {
+        function loadAbogados() {
             const adminsRef = ref(db, 'usuarios');
             onValue(adminsRef, (snapshot) => {
                 const users = snapshot.val() || {};
-                adminsList = Object.entries(users)
+                const abogados = Object.entries(users)
                     .filter(([uid, u]) => u.role === 'administrador' || u.role === 'editor')
                     .map(([uid, u]) => ({
                         uid: uid,
-                        nombre: u.nombre || 'Administrador',
+                        nombre: u.nombre || '',
                         apellidos: u.apellidos || '',
-                        cargo: u.cargo || 'Abogado',
-                        email: u.email || ''
+                        cargo: u.cargo || 'Abogado'
                     }));
 
-                renderAdminSelector();
+                // Limpiar opciones existentes (excepto la primera)
+                while (adminSelect.options.length > 1) {
+                    adminSelect.remove(1);
+                }
+
+                // Añadir abogados al combo
+                abogados.forEach(abogado => {
+                    const option = document.createElement('option');
+                    option.value = abogado.uid;
+                    // Formato: "Nombre PrimerApellido - Cargo"
+                    const primerApellido = (abogado.apellidos || '').split(' ')[0] || '';
+                    option.textContent = `${abogado.nombre} ${primerApellido} — ${abogado.cargo}`;
+                    adminSelect.appendChild(option);
+                });
+
             }, (error) => {
-                console.error('Error cargando admins:', error);
-                adminSelector.innerHTML = '<div class="admin-loading"><i class="fas fa-exclamation-triangle"></i> No se pudieron cargar los abogados</div>';
+                console.error('Error cargando abogados:', error);
             });
         }
-
-        function renderAdminSelector() {
-            let html = '';
-
-            // Opción "Cualquiera" (por defecto, seleccionada)
-            html += `
-                <div class="admin-option selected" data-uid="cualquiera" onclick="selectAdmin(this)">
-                    <input type="radio" name="admin_select" value="cualquiera" checked>
-                    <div class="admin-avatar-small" style="background: var(--accent-gold); color: #1a202c;">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="admin-option-info">
-                        <div class="name">Cualquier abogado disponible</div>
-                        <div class="role">Le asignaremos el mejor profesional para su caso</div>
-                    </div>
-                </div>
-            `;
-
-            // Opciones de administradores individuales
-            adminsList.forEach(admin => {
-                const iniciales = `${(admin.nombre?.charAt(0) || 'A')}${(admin.apellidos?.charAt(0) || 'D')}`;
-                html += `
-                    <div class="admin-option" data-uid="${admin.uid}" onclick="selectAdmin(this)">
-                        <input type="radio" name="admin_select" value="${admin.uid}">
-                        <div class="admin-avatar-small">${iniciales}</div>
-                        <div class="admin-option-info">
-                            <div class="name">${admin.nombre} ${admin.apellidos || ''}</div>
-                            <div class="role">${admin.cargo}${admin.email ? ' · ' + admin.email : ''}</div>
-                        </div>
-                    </div>
-                `;
-            });
-
-            adminSelector.innerHTML = html;
-        }
-
-        // Función global para seleccionar admin
-        window.selectAdmin = function(element) {
-            document.querySelectorAll('.admin-option').forEach(opt => opt.classList.remove('selected'));
-            element.classList.add('selected');
-            const radio = element.querySelector('input[type="radio"]');
-            if (radio) radio.checked = true;
-            adminAsignadoInput.value = element.dataset.uid;
-        };
 
         // ===== ENVÍO DEL FORMULARIO =====
         const form = document.getElementById('appointmentForm');
@@ -510,7 +470,7 @@
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
 
             const formData = new FormData(form);
-            const adminAsignado = adminAsignadoInput.value;
+            const adminAsignado = adminSelect.value;
 
             const citaData = {
                 id: 'cita_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
@@ -547,10 +507,7 @@
 
                 successMsg.classList.add('show');
                 form.reset();
-                adminAsignadoInput.value = 'cualquiera';
-                document.querySelectorAll('.admin-option').forEach(opt => opt.classList.remove('selected'));
-                document.querySelector('.admin-option[data-uid="cualquiera"]').classList.add('selected');
-                document.querySelector('.admin-option[data-uid="cualquiera"] input').checked = true;
+                adminSelect.value = 'cualquiera';
                 successMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             } catch (error) {
@@ -562,7 +519,7 @@
             }
         });
 
-        loadAdmins();
+        loadAbogados();
     </script>
 
     <script src="../js/main.js"></script>
