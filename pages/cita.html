@@ -1,3 +1,4 @@
+<!-- cita.html - Versión corregida -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -18,10 +19,12 @@
             border-radius: var(--radius-sm);
             object-fit: contain;
         }
-        /* Combo desplegable de abogados */
+
+        /* ===== ESTILOS UNIFICADOS PARA EL COMBO DE ABOGADOS ===== */
         .abogado-select-wrapper {
             position: relative;
         }
+
         .abogado-select-wrapper .select-icon {
             position: absolute;
             right: 16px;
@@ -30,35 +33,44 @@
             color: var(--text-muted, #6b7280);
             pointer-events: none;
             font-size: 0.85rem;
+            transition: color var(--transition-fast);
         }
+
+        /* El select usa los mismos estilos que .form-select */
         .abogado-select {
             width: 100%;
             padding: 14px 44px 14px 16px;
-            border: 2px solid var(--border-color, #e5e7eb);
-            border-radius: 10px;
-            font-size: 1rem;
-            font-family: var(--font-body, 'Inter', sans-serif);
-            color: var(--text-primary, #1f2937);
-            background: var(--card-bg, #fff);
+            border: 1px solid var(--border-color, #e5e7eb);
+            border-radius: var(--radius-md);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.95rem;
             cursor: pointer;
             appearance: none;
             -webkit-appearance: none;
             -moz-appearance: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
         }
+
         .abogado-select:focus {
             outline: none;
             border-color: var(--accent-gold, #c9a227);
-            box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.15);
+            box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.1);
         }
+
         .abogado-select option {
-            padding: 10px;
+            padding: 8px 12px;
             font-size: 0.95rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
         }
-        .abogado-select option:first-child {
+
+        /* Opción por defecto (placeholder) con color más tenue */
+        .abogado-select option.default-option {
             color: var(--text-muted, #6b7280);
-            font-style: italic;
         }
+
         .abogado-label {
             display: flex;
             align-items: center;
@@ -66,16 +78,19 @@
             margin-bottom: 8px;
             font-weight: 500;
             font-size: 0.9rem;
-            color: var(--text-primary, #1f2937);
+            color: var(--text-primary);
         }
+
         .abogado-label .required {
             color: #e53e3e;
         }
+
         .abogado-hint {
             margin-top: 6px;
             font-size: 0.8rem;
-            color: var(--text-muted, #6b7280);
+            color: var(--text-muted);
         }
+
         .form-success-message {
             display: none;
             padding: 20px;
@@ -86,10 +101,18 @@
             text-align: center;
             margin-bottom: 24px;
         }
+
         .form-success-message.show {
             display: block;
             animation: fadeIn 0.4s ease;
         }
+
+        [data-theme="dark"] .form-success-message {
+            background: #065f46;
+            border-color: #10b981;
+            color: #d1fae5;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -209,8 +232,12 @@
                             </label>
                             <div class="abogado-select-wrapper">
                                 <select class="abogado-select" name="admin_asignado" id="adminAsignado" required>
-                                    <option value="cualquiera">Cualquier abogado disponible</option>
-                                    <!-- Las opciones se cargan dinámicamente desde Firebase -->
+                                    <!-- Opción por defecto: se muestra como placeholder -->
+                                    <option value="cualquiera" class="default-option" selected disabled style="color: var(--text-muted);">
+                                        Seleccione un abogado...
+                                    </option>
+                                    <!-- Las opciones de abogados se cargan dinámicamente desde Firebase -->
+                                    <!-- La opción "Cualquier abogado disponible" se añade desde JS -->
                                 </select>
                                 <i class="fas fa-chevron-down select-icon"></i>
                             </div>
@@ -433,20 +460,34 @@
                         cargo: u.cargo || 'Abogado'
                     }));
 
-                // Limpiar opciones existentes (excepto la primera)
+                // Limpiar opciones (mantener solo la primera opción por defecto)
                 while (adminSelect.options.length > 1) {
                     adminSelect.remove(1);
                 }
+
+                // Añadir opción "Cualquier abogado disponible" como segunda opción
+                const anyOption = document.createElement('option');
+                anyOption.value = 'cualquiera';
+                anyOption.textContent = 'Cualquier abogado disponible';
+                adminSelect.appendChild(anyOption);
 
                 // Añadir abogados al combo
                 abogados.forEach(abogado => {
                     const option = document.createElement('option');
                     option.value = abogado.uid;
-                    // Formato: "Nombre PrimerApellido - Cargo"
                     const primerApellido = (abogado.apellidos || '').split(' ')[0] || '';
                     option.textContent = `${abogado.nombre} ${primerApellido} — ${abogado.cargo}`;
                     adminSelect.appendChild(option);
                 });
+
+                // Si no hay abogados, mostrar mensaje
+                if (abogados.length === 0) {
+                    const noOption = document.createElement('option');
+                    noOption.value = 'cualquiera';
+                    noOption.textContent = '— No hay abogados disponibles —';
+                    noOption.disabled = true;
+                    adminSelect.appendChild(noOption);
+                }
 
             }, (error) => {
                 console.error('Error cargando abogados:', error);
@@ -470,7 +511,12 @@
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
 
             const formData = new FormData(form);
-            const adminAsignado = adminSelect.value;
+            // Si el select está en la opción por defecto (disabled), se envía como 'cualquiera'
+            let adminAsignado = adminSelect.value;
+            // Si el valor es vacío (por la opción disabled) o null, usar 'cualquiera'
+            if (!adminAsignado || adminAsignado === '') {
+                adminAsignado = 'cualquiera';
+            }
 
             const citaData = {
                 id: 'cita_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
@@ -507,7 +553,8 @@
 
                 successMsg.classList.add('show');
                 form.reset();
-                adminSelect.value = 'cualquiera';
+                // Restaurar el select a su estado por defecto (opción disabled)
+                adminSelect.value = '';
                 successMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             } catch (error) {
