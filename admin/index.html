@@ -863,6 +863,9 @@
                     return;
                 }
 
+                // Guardar UID del admin logueado para filtrado de citas
+                window.currentAdminUid = user.uid;
+
                 // Actualizar info del usuario en la barra superior
                 const nombreCompleto = `${userData.nombre || ''} ${userData.apellidos || ''}`.trim();
                 document.getElementById('topBarName').textContent = nombreCompleto || user.email || 'Administrador';
