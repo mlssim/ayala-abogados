@@ -46,52 +46,75 @@ function getStatusBadge(status) {
     return map[status] || map['pendiente'];
 }
 
+// Función para sanitizar datos y evitar referencias circulares
+function sanitizeData(data) {
+    if (data === null || data === undefined) return data;
+    try {
+        return JSON.parse(JSON.stringify(data));
+    } catch (e) {
+        console.warn('Error al sanitizar datos:', e);
+        return {};
+    }
+}
+
 // ========== SINCRONIZACIÓN CON FIREBASE ==========
 function syncWithFirebase() {
     // Escuchar citas en tiempo real
     const citasRef = ref(db, 'citas');
     appointmentsUnsubscribe = onValue(citasRef, (snapshot) => {
-        const citas = snapshot.val() || {};
-        appointments = Object.values(citas).sort((a, b) => 
-            new Date(b.fechaCreacion || 0) - new Date(a.fechaCreacion || 0)
-        );
+        try {
+            const citas = sanitizeData(snapshot.val()) || {};
+            appointments = Object.values(citas).sort((a, b) => 
+                new Date(b.fechaCreacion || 0) - new Date(a.fechaCreacion || 0)
+            );
 
-        renderDashboardAppointments();
-        renderAppointmentsTable();
-        updateStats();
-        renderCalendar(calendarCurrentMonth, calendarCurrentYear);
+            renderDashboardAppointments();
+            renderAppointmentsTable();
+            updateStats();
+            renderCalendar(calendarCurrentMonth, calendarCurrentYear);
+        } catch (error) {
+            console.error('Error al procesar citas:', error);
+        }
     });
 
-    // Escuchar usuarios (clientes)
+    // Escuchar usuarios (clientes) - CORREGIDO con sanitización
     const usersRef = ref(db, 'usuarios');
     onValue(usersRef, (snapshot) => {
-        const users = snapshot.val() || {};
-        clients = Object.values(users).filter(u => u.role !== 'administrador').map(u => ({
-            id: u.uid,
-            nombre: u.nombre,
-            apellidos: u.apellidos || '',
-            dni: u.dni || 'N/D',
-            telefono: u.telefono || '',
-            email: u.email,
-            total_citas: 0,
-            ultima_cita: 'Nunca',
-            role: u.role,
-            active: u.active,
-            createdAt: u.createdAt
-        }));
-        renderClientsTable();
-        updateStats();
+        try {
+            const users = sanitizeData(snapshot.val()) || {};
+            clients = Object.values(users).filter(u => u.role !== 'administrador').map(u => ({
+                id: u.uid || '',
+                nombre: u.nombre || '',
+                apellidos: u.apellidos || '',
+                dni: u.dni || 'N/D',
+                telefono: u.telefono || '',
+                email: u.email || '',
+                total_citas: 0,
+                ultima_cita: 'Nunca',
+                role: u.role || 'cliente',
+                active: u.active !== false,
+                createdAt: u.createdAt || null
+            }));
+            renderClientsTable();
+            updateStats();
+        } catch (error) {
+            console.error('Error al procesar usuarios:', error);
+        }
     });
 
     // Escuchar notificaciones
     const notifRef = ref(db, 'notificaciones');
     onValue(notifRef, (snapshot) => {
-        const notifs = snapshot.val() || {};
-        notifications = Object.values(notifs).filter(n => !n.leida).sort((a, b) => 
-            new Date(b.fecha || 0) - new Date(a.fecha || 0)
-        );
-        renderNotifications();
-        updateStats();
+        try {
+            const notifs = sanitizeData(snapshot.val()) || {};
+            notifications = Object.values(notifs).filter(n => !n.leida).sort((a, b) => 
+                new Date(b.fecha || 0) - new Date(a.fecha || 0)
+            );
+            renderNotifications();
+            updateStats();
+        } catch (error) {
+            console.error('Error al procesar notificaciones:', error);
+        }
     });
 }
 
@@ -359,12 +382,17 @@ window.deleteNotification = async function(id) {
 let editingAppointmentId = null;
 
 window.editAppointment = async function(id) {
-    const snapshot = await get(ref(db, 'citas/' + id));
-    if (!snapshot.exists()) return;
+    try {
+        const snapshot = await get(ref(db, 'citas/' + id));
+        if (!snapshot.exists()) return;
 
-    const app = snapshot.val();
-    editingAppointmentId = id;
-    showEditModal(app);
+        const app = sanitizeData(snapshot.val());
+        editingAppointmentId = id;
+        showEditModal(app);
+    } catch (error) {
+        console.error('Error al cargar cita:', error);
+        showAdminNotification('error', 'Error', 'No se pudo cargar la cita.');
+    }
 };
 
 function showEditModal(app) {
@@ -531,11 +559,15 @@ window.cancelAppointment = async function() {
 };
 
 window.viewAppointment = async function(id) {
-    const snapshot = await get(ref(db, 'citas/' + id));
-    if (!snapshot.exists()) return;
+    try {
+        const snapshot = await get(ref(db, 'citas/' + id));
+        if (!snapshot.exists()) return;
 
-    const app = snapshot.val();
-    alert(`Cita #${id}\nCliente: ${app.nombre}\nTeléfono: ${app.telefono}\nServicio: ${app.tipo_consulta}\nFecha: ${formatDate(app.fecha_preferida)} ${app.hora_preferida || ''}\nEstado: ${app.status}`);
+        const app = sanitizeData(snapshot.val());
+        alert(`Cita #${id}\nCliente: ${app.nombre}\nTeléfono: ${app.telefono}\nServicio: ${app.tipo_consulta}\nFecha: ${formatDate(app.fecha_preferida)} ${app.hora_preferida || ''}\nEstado: ${app.status}`);
+    } catch (error) {
+        console.error('Error al ver cita:', error);
+    }
 };
 
 window.viewClient = function(id) {
