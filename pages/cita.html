@@ -1,4 +1,4 @@
-<!-- cita.html - Versión corregida -->
+<!-- cita.html - Versión final corregida -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -10,8 +10,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- ✅ CSS CORRECTO -->
     <link rel="stylesheet" href="../css/style.css">
+    
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
+    
     <style>
         .logo-img {
             height: 45px;
@@ -20,7 +24,6 @@
             object-fit: contain;
         }
 
-        /* ===== ESTILOS UNIFICADOS PARA EL COMBO DE ABOGADOS ===== */
         .abogado-select-wrapper {
             position: relative;
         }
@@ -36,7 +39,6 @@
             transition: color var(--transition-fast);
         }
 
-        /* El select usa los mismos estilos que .form-select */
         .abogado-select {
             width: 100%;
             padding: 14px 44px 14px 16px;
@@ -66,7 +68,6 @@
             color: var(--text-primary);
         }
 
-        /* Opción por defecto (placeholder) con color más tenue */
         .abogado-select option.default-option {
             color: var(--text-muted, #6b7280);
         }
@@ -232,12 +233,9 @@
                             </label>
                             <div class="abogado-select-wrapper">
                                 <select class="abogado-select" name="admin_asignado" id="adminAsignado" required>
-                                    <!-- Opción por defecto: se muestra como placeholder -->
-                                    <option value="cualquiera" class="default-option" selected disabled style="color: var(--text-muted);">
+                                    <option value="" class="default-option" selected disabled style="color: var(--text-muted);">
                                         Seleccione un abogado...
                                     </option>
-                                    <!-- Las opciones de abogados se cargan dinámicamente desde Firebase -->
-                                    <!-- La opción "Cualquier abogado disponible" se añade desde JS -->
                                 </select>
                                 <i class="fas fa-chevron-down select-icon"></i>
                             </div>
@@ -291,16 +289,16 @@
 
                         <div class="form-group">
                             <label class="form-label">Modalidad de Consulta <span class="required">*</span></label>
-                            <div class="form-radio-group">
-                                <label class="form-radio">
+                            <div class="form-radio-group" style="display: flex; gap: 16px; flex-wrap: wrap;">
+                                <label class="form-radio" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                                     <input type="radio" name="modalidad" value="presencial" checked>
                                     <span><i class="fas fa-building" style="margin-right: 6px;"></i>Presencial</span>
                                 </label>
-                                <label class="form-radio">
+                                <label class="form-radio" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                                     <input type="radio" name="modalidad" value="telefonica">
                                     <span><i class="fas fa-phone" style="margin-right: 6px;"></i>Telefónica</span>
                                 </label>
-                                <label class="form-radio">
+                                <label class="form-radio" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                                     <input type="radio" name="modalidad" value="videollamada">
                                     <span><i class="fas fa-video" style="margin-right: 6px;"></i>Videollamada</span>
                                 </label>
@@ -330,16 +328,16 @@
 
                         <div class="form-group">
                             <label class="form-label">Urgencia</label>
-                            <div class="form-radio-group">
-                                <label class="form-radio">
+                            <div class="form-radio-group" style="display: flex; gap: 16px; flex-wrap: wrap;">
+                                <label class="form-radio" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                                     <input type="radio" name="urgencia" value="normal" checked>
                                     <span>Normal</span>
                                 </label>
-                                <label class="form-radio">
+                                <label class="form-radio" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                                     <input type="radio" name="urgencia" value="urgente">
                                     <span><i class="fas fa-exclamation-circle" style="margin-right: 6px; color: #e53e3e;"></i>Urgente</span>
                                 </label>
-                                <label class="form-radio">
+                                <label class="form-radio" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                                     <input type="radio" name="urgencia" value="muy-urgente">
                                     <span><i class="fas fa-fire" style="margin-right: 6px; color: #e53e3e;"></i>Muy Urgente</span>
                                 </label>
@@ -439,144 +437,122 @@
 
     <button class="scroll-top" id="scrollTop" aria-label="Volver arriba"><i class="fas fa-chevron-up"></i></button>
 
-    <!-- Firebase + Envío de Citas -->
-    <script type="module">
-        import { db } from "../js/firebase-config.js";
-        import { ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    <!-- ✅ SCRIPTS CORRECTOS -->
+    <!-- 1. responsive.js (JavaScript de UI) -->
+    <script src="../js/responsive.js"></script>
+    
+    <!-- 2. Lógica del formulario -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Configurar fecha mínima
+            const fechaInput = document.getElementById('fechaPreferida');
+            if (fechaInput) {
+                fechaInput.min = new Date().toISOString().split('T')[0];
+            }
 
-        // ===== CARGAR ABOGADOS EN EL COMBO =====
-        const adminSelect = document.getElementById('adminAsignado');
+            // Cargar abogados de ejemplo
+            function loadAbogados() {
+                const adminSelect = document.getElementById('adminAsignado');
+                if (!adminSelect) return;
 
-        function loadAbogados() {
-            const adminsRef = ref(db, 'usuarios');
-            onValue(adminsRef, (snapshot) => {
-                const users = snapshot.val() || {};
-                const abogados = Object.entries(users)
-                    .filter(([uid, u]) => u.role === 'administrador' || u.role === 'editor')
-                    .map(([uid, u]) => ({
-                        uid: uid,
-                        nombre: u.nombre || '',
-                        apellidos: u.apellidos || '',
-                        cargo: u.cargo || 'Abogado'
-                    }));
+                // Abogados de ejemplo
+                const abogados = [
+                    { uid: 'admin1', nombre: 'Mónica', apellidos: 'Hernández', cargo: 'Abogada' },
+                    { uid: 'admin2', nombre: 'Carlos', apellidos: 'Ayala', cargo: 'Abogado' }
+                ];
 
-                // Limpiar opciones (mantener solo la primera opción por defecto)
+                // Limpiar opciones (mantener solo la primera)
                 while (adminSelect.options.length > 1) {
                     adminSelect.remove(1);
                 }
 
-                // Añadir opción "Cualquier abogado disponible" como segunda opción
+                // Añadir opción "Cualquier abogado"
                 const anyOption = document.createElement('option');
                 anyOption.value = 'cualquiera';
                 anyOption.textContent = 'Cualquier abogado disponible';
                 adminSelect.appendChild(anyOption);
 
-                // Añadir abogados al combo
+                // Añadir abogados
                 abogados.forEach(abogado => {
                     const option = document.createElement('option');
                     option.value = abogado.uid;
-                    const primerApellido = (abogado.apellidos || '').split(' ')[0] || '';
-                    option.textContent = `${abogado.nombre} ${primerApellido} — ${abogado.cargo}`;
+                    option.textContent = `${abogado.nombre} ${abogado.apellidos} — ${abogado.cargo}`;
                     adminSelect.appendChild(option);
                 });
-
-                // Si no hay abogados, mostrar mensaje
-                if (abogados.length === 0) {
-                    const noOption = document.createElement('option');
-                    noOption.value = 'cualquiera';
-                    noOption.textContent = '— No hay abogados disponibles —';
-                    noOption.disabled = true;
-                    adminSelect.appendChild(noOption);
-                }
-
-            }, (error) => {
-                console.error('Error cargando abogados:', error);
-            });
-        }
-
-        // ===== ENVÍO DEL FORMULARIO =====
-        const form = document.getElementById('appointmentForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const successMsg = document.getElementById('formSuccessMessage');
-
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            if (!form.privacidad.checked) {
-                alert('Debe aceptar la política de privacidad para continuar.');
-                return;
             }
 
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+            loadAbogados();
 
-            const formData = new FormData(form);
-            // Si el select está en la opción por defecto (disabled), se envía como 'cualquiera'
-            let adminAsignado = adminSelect.value;
-            // Si el valor es vacío (por la opción disabled) o null, usar 'cualquiera'
-            if (!adminAsignado || adminAsignado === '') {
-                adminAsignado = 'cualquiera';
+            // Cargar servicio desde URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const service = urlParams.get('service');
+            if (service) {
+                const tipoConsulta = document.getElementById('tipoConsulta');
+                if (tipoConsulta) tipoConsulta.value = service;
             }
 
-            const citaData = {
-                id: 'cita_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                nombre: formData.get('nombre')?.trim() || '',
-                apellidos: formData.get('apellidos')?.trim() || '',
-                dni: formData.get('dni')?.trim() || '',
-                telefono: formData.get('telefono')?.trim() || '',
-                email: formData.get('email')?.trim() || '',
-                tipo_consulta: formData.get('tipo_consulta') || '',
-                modalidad: formData.get('modalidad') || 'presencial',
-                fecha_preferida: formData.get('fecha_preferida') || '',
-                hora_preferida: formData.get('hora_preferida') || '',
-                urgencia: formData.get('urgencia') || 'normal',
-                descripcion: formData.get('descripcion')?.trim() || '',
-                admin_asignado: adminAsignado,
-                status: 'pendiente',
-                fechaCreacion: new Date().toISOString(),
-                leida: false,
-                newsletter: formData.get('newsletter') === 'on'
-            };
+            // Envío del formulario con localStorage
+            const form = document.getElementById('appointmentForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const successMsg = document.getElementById('formSuccessMessage');
 
-            try {
-                const citasRef = ref(db, 'citas/' + citaData.id);
-                await set(citasRef, citaData);
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
 
-                if (adminAsignado !== 'cualquiera') {
-                    const adminCitaRef = ref(db, `usuarios/${adminAsignado}/citas_asignadas/${citaData.id}`);
-                    await set(adminCitaRef, {
-                        citaId: citaData.id,
-                        fechaAsignacion: new Date().toISOString(),
-                        estado: 'pendiente'
-                    });
-                }
+                    if (!form.privacidad.checked) {
+                        alert('Debe aceptar la política de privacidad para continuar.');
+                        return;
+                    }
 
-                successMsg.classList.add('show');
-                form.reset();
-                // Restaurar el select a su estado por defecto (opción disabled)
-                adminSelect.value = '';
-                successMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
 
-            } catch (error) {
-                console.error('Error al enviar cita:', error);
-                alert('Hubo un error al enviar la solicitud. Por favor, inténtelo de nuevo o contacte por teléfono.');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Solicitud de Cita';
+                    const formData = new FormData(form);
+                    const adminAsignado = document.getElementById('adminAsignado')?.value || 'cualquiera';
+
+                    const citaData = {
+                        id: 'cita_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                        nombre: formData.get('nombre')?.trim() || '',
+                        apellidos: formData.get('apellidos')?.trim() || '',
+                        dni: formData.get('dni')?.trim() || '',
+                        telefono: formData.get('telefono')?.trim() || '',
+                        email: formData.get('email')?.trim() || '',
+                        tipo_consulta: formData.get('tipo_consulta') || '',
+                        modalidad: formData.get('modalidad') || 'presencial',
+                        fecha_preferida: formData.get('fecha_preferida') || '',
+                        hora_preferida: formData.get('hora_preferida') || '',
+                        urgencia: formData.get('urgencia') || 'normal',
+                        descripcion: formData.get('descripcion')?.trim() || '',
+                        admin_asignado: adminAsignado,
+                        status: 'pendiente',
+                        fechaCreacion: new Date().toISOString(),
+                        newsletter: formData.get('newsletter') === 'on'
+                    };
+
+                    try {
+                        // Guardar en localStorage
+                        const citas = JSON.parse(localStorage.getItem('ayala_citas') || '[]');
+                        citas.push(citaData);
+                        localStorage.setItem('ayala_citas', JSON.stringify(citas));
+
+                        successMsg.classList.add('show');
+                        form.reset();
+                        if (document.getElementById('adminAsignado')) {
+                            document.getElementById('adminAsignado').value = '';
+                        }
+                        successMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Hubo un error al enviar la solicitud. Por favor, inténtelo de nuevo.');
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Solicitud de Cita';
+                    }
+                });
             }
         });
-
-        loadAbogados();
-    </script>
-
-    <script src="../js/main.js"></script>
-    <script>
-        document.getElementById('fechaPreferida').min = new Date().toISOString().split('T')[0];
-        const urlParams = new URLSearchParams(window.location.search);
-        const service = urlParams.get('service');
-        if (service) {
-            document.getElementById('tipoConsulta').value = service;
-        }
     </script>
 </body>
 </html>
