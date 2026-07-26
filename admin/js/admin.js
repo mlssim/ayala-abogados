@@ -67,9 +67,11 @@ function syncWithFirebase() {
         try {
             const citas = sanitizeData(snapshot.val()) || {};
             const allAppointments = Object.values(citas);
+            console.log('[DEBUG citas] total en Firebase:', allAppointments.length, allAppointments);
 
             // Obtener UID del admin actualmente logueado
             const currentAdminUid = window.currentAdminUid || null;
+            console.log('[DEBUG citas] currentAdminUid:', currentAdminUid);
 
             // Filtrar citas:
             // - Si es admin logueado: muestra citas asignadas a él + citas "cualquiera"
@@ -77,8 +79,10 @@ function syncWithFirebase() {
             if (currentAdminUid) {
                 appointments = allAppointments.filter(cita => {
                     const asignado = cita.admin_asignado;
-                    // Mostrar si es "cualquiera" o está asignada a este admin
-                    return asignado === 'cualquiera' || asignado === currentAdminUid;
+                    // Mostrar si es "cualquiera", está asignada a este admin,
+                    // o no tiene ese campo (citas antiguas o de otro origen
+                    // que no lo rellenaron — antes se excluían por error).
+                    return !asignado || asignado === 'cualquiera' || asignado === currentAdminUid;
                 }).sort((a, b) => 
                     new Date(b.fechaCreacion || 0) - new Date(a.fechaCreacion || 0)
                 );
@@ -90,6 +94,7 @@ function syncWithFirebase() {
             }
 
             renderDashboardAppointments();
+            console.log('[DEBUG citas] tras filtrar, a mostrar:', appointments.length, appointments);
             renderAppointmentsTable();
             updateStats();
             renderCalendar(calendarCurrentMonth, calendarCurrentYear);
@@ -1046,18 +1051,26 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('page-'+page).style.display = 'block';
         if (pageTitle) pageTitle.textContent = pageTitles[page] || 'Panel Principal';
         sidebar?.classList.remove('mobile-open');
+        document.getElementById('sidebarOverlay')?.classList.remove('active');
     };
 
     // Menú móvil
     const mobileBtn = document.getElementById('mobileMenuBtn');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    function toggleMobileSidebar(open) {
+        const shouldOpen = open !== undefined ? open : !sidebar?.classList.contains('mobile-open');
+        sidebar?.classList.toggle('mobile-open', shouldOpen);
+        sidebarOverlay?.classList.toggle('active', shouldOpen);
+    }
     if (mobileBtn) {
-        mobileBtn.style.display = window.innerWidth <= 768 ? 'block' : 'none';
-        mobileBtn.addEventListener('click', () => sidebar?.classList.toggle('mobile-open'));
+        mobileBtn.style.display = window.innerWidth <= 992 ? 'flex' : 'none';
+        mobileBtn.addEventListener('click', () => toggleMobileSidebar());
         window.addEventListener('resize', function() {
-            mobileBtn.style.display = window.innerWidth <= 768 ? 'block' : 'none';
-            if (window.innerWidth > 768) sidebar?.classList.remove('mobile-open');
+            mobileBtn.style.display = window.innerWidth <= 992 ? 'flex' : 'none';
+            if (window.innerWidth > 992) toggleMobileSidebar(false);
         });
     }
+    sidebarOverlay?.addEventListener('click', () => toggleMobileSidebar(false));
 
     // Iniciar sincronización con Firebase — solo si el guard de admin
     // (en admin/index.html) ha confirmado el rol contra la base de datos.
