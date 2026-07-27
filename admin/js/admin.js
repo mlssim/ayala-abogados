@@ -61,40 +61,27 @@ function sanitizeData(data) {
 
 // ========== SINCRONIZACIÓN CON FIREBASE ==========
 function syncWithFirebase() {
-    // Escuchar citas en tiempo real - FILTRADO POR ADMIN ASIGNADO
+    // Escuchar citas en tiempo real
     const citasRef = ref(db, 'citas');
     appointmentsUnsubscribe = onValue(citasRef, (snapshot) => {
         try {
             const citas = sanitizeData(snapshot.val()) || {};
             const allAppointments = Object.values(citas);
-            console.log('[DEBUG citas] total en Firebase:', allAppointments.length, allAppointments);
 
-            // Obtener UID del admin actualmente logueado
-            const currentAdminUid = window.currentAdminUid || null;
-            console.log('[DEBUG citas] currentAdminUid:', currentAdminUid);
-
-            // Filtrar citas:
-            // - Si es admin logueado: muestra citas asignadas a él + citas "cualquiera"
-            // - Si no hay admin logueado (fallback): muestra todas
-            if (currentAdminUid) {
-                appointments = allAppointments.filter(cita => {
-                    const asignado = cita.admin_asignado;
-                    // Mostrar si es "cualquiera", está asignada a este admin,
-                    // o no tiene ese campo (citas antiguas o de otro origen
-                    // que no lo rellenaron — antes se excluían por error).
-                    return !asignado || asignado === 'cualquiera' || asignado === currentAdminUid;
-                }).sort((a, b) => 
-                    new Date(b.fechaCreacion || 0) - new Date(a.fechaCreacion || 0)
-                );
-            } else {
-                // Fallback: mostrar todas
-                appointments = allAppointments.sort((a, b) => 
-                    new Date(b.fechaCreacion || 0) - new Date(a.fechaCreacion || 0)
-                );
-            }
+            // NOTA: antes se filtraban las citas para mostrar solo las
+            // asignadas al admin logueado o marcadas "cualquiera". Se ha
+            // quitado ese filtro: el desplegable "Abogado" del formulario
+            // público usa valores de ejemplo (admin1/admin2/admin3) que no
+            // corresponden a ningún UID real de Firebase, así que cualquier
+            // cita donde se eligiera un abogado concreto quedaba invisible
+            // para siempre. Ahora todos los administradores ven todas las
+            // citas; el abogado solicitado se sigue mostrando como dato
+            // informativo en la tabla.
+            appointments = allAppointments.sort((a, b) =>
+                new Date(b.fechaCreacion || 0) - new Date(a.fechaCreacion || 0)
+            );
 
             renderDashboardAppointments();
-            console.log('[DEBUG citas] tras filtrar, a mostrar:', appointments.length, appointments);
             renderAppointmentsTable();
             updateStats();
             renderCalendar(calendarCurrentMonth, calendarCurrentYear);
