@@ -258,8 +258,9 @@
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label">DNI/NIE <span class="required">*</span></label>
-                                <input type="text" class="form-input" name="dni" placeholder="Ej: 12345678A" required>
+                                <label class="form-label">DNI/NIE/CIF <span class="required">*</span></label>
+                                <input type="text" class="form-input" name="dni" id="dniInput" placeholder="Ej: 12345678A" required>
+                                <small id="dniError" style="display:none; color:#e53e3e; font-size:0.8rem; margin-top:4px;"></small>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Teléfono <span class="required">*</span></label>
@@ -497,6 +498,37 @@
             if (service) {
                 const tipoConsulta = document.getElementById('tipoConsulta');
                 if (tipoConsulta) tipoConsulta.value = service;
+            }
+
+            // Validación en tiempo real del DNI/NIE/CIF (al salir del
+            // campo), además de la comprobación que ya hace
+            // js/email-service.js al enviar el formulario.
+            const dniInput = document.getElementById('dniInput');
+            const dniError = document.getElementById('dniError');
+            if (dniInput && dniError) {
+                dniInput.addEventListener('blur', function() {
+                    const valor = this.value.trim();
+                    if (!valor) {
+                        this.style.borderColor = '';
+                        dniError.style.display = 'none';
+                        return;
+                    }
+                    const esValido = typeof window.validarNifNieCif === 'function' && window.validarNifNieCif(valor);
+                    if (esValido) {
+                        this.style.borderColor = '';
+                        dniError.style.display = 'none';
+                    } else {
+                        this.style.borderColor = '#e53e3e';
+                        dniError.textContent = 'El DNI/NIE/CIF no parece válido. Revíselo, por favor.';
+                        dniError.style.display = 'block';
+                    }
+                });
+                dniInput.addEventListener('input', function() {
+                    // Al volver a escribir, quitamos el aviso hasta que
+                    // vuelva a salir del campo (evita ruido mientras teclea).
+                    this.style.borderColor = '';
+                    dniError.style.display = 'none';
+                });
             }
 
             // El envío del formulario #appointmentForm lo gestiona

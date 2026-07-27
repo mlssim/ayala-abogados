@@ -826,13 +826,32 @@ window.acceptAppointment = async function() {
     if (editingAppointmentId === null) return;
 
     try {
+        // Leemos la cita antes de actualizarla, para tener los datos del
+        // cliente (nombre, email, fecha...) con los que redactar el correo.
+        const snapshot = await get(ref(db, 'citas/' + editingAppointmentId));
+        const cita = sanitizeData(snapshot.val()) || {};
+
         await update(ref(db, 'citas/' + editingAppointmentId), {
             status: 'confirmada',
             fechaActualizacion: new Date().toISOString()
         });
 
         closeEditModal();
-        showAdminNotification('success', 'Cita aceptada', 'La cita ha sido confirmada.');
+
+        // Enviar confirmación al cliente: por EmailJS si está configurado,
+        // o abriendo el cliente de correo (Outlook u otro) como respaldo.
+        if (typeof window.sendClientConfirmationEmail === 'function') {
+            const result = await window.sendClientConfirmationEmail(cita);
+            if (result.fallback) {
+                showAdminNotification('success', 'Cita aceptada', 'Se ha abierto tu cliente de correo con la confirmación lista para enviar.');
+            } else if (result.success) {
+                showAdminNotification('success', 'Cita aceptada', 'Se ha enviado el correo de confirmación al cliente.');
+            } else {
+                showAdminNotification('success', 'Cita aceptada', 'La cita ha sido confirmada (no se pudo enviar el correo).');
+            }
+        } else {
+            showAdminNotification('success', 'Cita aceptada', 'La cita ha sido confirmada.');
+        }
     } catch (error) {
         showAdminNotification('error', 'Error', 'No se pudo confirmar la cita.');
     }

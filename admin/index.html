@@ -777,9 +777,16 @@
         });
     </script>
 
+    <!-- SDK de EmailJS (para el correo de confirmación al cliente al
+         pulsar "Aceptar"). Ver la nota en js/email-service.js sobre cómo
+         configurar la cuenta de EmailJS. -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
     <!-- Scripts Firebase -->
     <script type="module" src="../js/firebase-config.js"></script>
     <script type="module" src="../js/auth-service.js"></script>
+    <script type="module" src="../js/appointment-service.js"></script>
+    <script type="module" src="../js/email-service.js"></script>
     <script type="module" src="js/admin.js"></script>
 
     <!-- Auth Guard - CORREGIDO con manejo de errores y sanitización -->
