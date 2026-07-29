@@ -452,6 +452,18 @@
             window.location.href = '../index.html';
         });
 
+        // Escapado HTML básico (defensa en profundidad: aunque estos campos
+        // hoy vienen de <select>/<input date>, no de texto libre).
+        function escapeHtml(valor) {
+            if (valor === null || valor === undefined) return '';
+            return String(valor)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         // Cargar citas del usuario (desde Firebase, no localStorage)
         async function loadUserAppointments() {
             const listContainer = document.getElementById('appointmentsList');
@@ -490,14 +502,14 @@
                             <i class="fas fa-calendar-check" style="font-size: 1.2rem;"></i>
                         </div>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; margin-bottom: 4px;">${app.tipo_consulta || 'Consulta General'}</div>
+                            <div style="font-weight: 600; margin-bottom: 4px;">${escapeHtml(app.tipo_consulta || 'Consulta General')}</div>
                             <div style="font-size: 0.85rem; color: var(--text-muted);">
-                                <i class="fas fa-clock" style="margin-right: 4px;"></i>${dateStr}
-                                ${app.fecha_preferida ? ' · ' + app.fecha_preferida : ''}
-                                ${app.modalidad ? ' · ' + app.modalidad : ''}
+                                <i class="fas fa-clock" style="margin-right: 4px;"></i>${escapeHtml(dateStr)}
+                                ${app.fecha_preferida ? ' · ' + escapeHtml(app.fecha_preferida) : ''}
+                                ${app.modalidad ? ' · ' + escapeHtml(app.modalidad) : ''}
                             </div>
                         </div>
-                        <span class="appointment-status ${statusClass}">${statusText}</span>
+                        <span class="appointment-status ${statusClass}">${escapeHtml(statusText)}</span>
                     </div>
                 `;
             }).join('');

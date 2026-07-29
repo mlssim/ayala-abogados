@@ -7,6 +7,16 @@
     'use strict';
 
     // ===== UTILIDADES UI =====
+    function escapeHtml(valor) {
+        if (valor === null || valor === undefined) return '';
+        return String(valor)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     function createElement(tag, className, innerHTML) {
         const el = document.createElement(tag);
         if (className) el.className = className;
@@ -535,9 +545,9 @@
                     justify-content: center;
                     font-size: 0.85rem;
                     font-weight: 700;
-                ">${session.nombre.charAt(0)}${session.apellidos.charAt(0)}</div>
+                ">${escapeHtml(session.nombre.charAt(0))}${escapeHtml(session.apellidos.charAt(0))}</div>
                 <span style="display: flex; align-items: center; gap: 6px;">
-                    ${session.nombre}
+                    ${escapeHtml(session.nombre)}
                     ${roleBadge}
                     <i class="fas fa-chevron-down" style="font-size: 0.7rem; opacity: 0.6;"></i>
                 </span>
@@ -560,8 +570,8 @@
                 z-index: 1000;
             ">
                 <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-light, #edf2f7);">
-                    <div style="font-weight: 600; color: var(--text-primary, #1a202c); font-size: 0.9rem;">${session.nombre} ${session.apellidos}</div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted, #718096);">${session.email}</div>
+                    <div style="font-weight: 600; color: var(--text-primary, #1a202c); font-size: 0.9rem;">${escapeHtml(session.nombre)} ${escapeHtml(session.apellidos)}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted, #718096);">${escapeHtml(session.email)}</div>
                     <div style="font-size: 0.75rem; color: var(--accent-gold, #c9a227); margin-top: 2px;">${roleDisplay}</div>
                 </div>
                 <a href="pages/perfil.html" style="display: flex; align-items: center; gap: 10px; padding: 10px 16px; color: var(--text-secondary, #4a5568); font-size: 0.9rem; transition: all 0.15s; text-decoration: none;">

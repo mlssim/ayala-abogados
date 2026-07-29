@@ -6,7 +6,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getDatabase } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-const firebaseConfig = {
+export const firebaseConfig = {
     apiKey: "AIzaSyCaxlVIHZ38VoZ59mcSlnCfgaF9jJ9nxL8",
     authDomain: "ayala-abogados.firebaseapp.com",
     databaseURL: "https://ayala-abogados-default-rtdb.europe-west1.firebasedatabase.app",

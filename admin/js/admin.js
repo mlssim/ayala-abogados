@@ -4,15 +4,31 @@
    ============================================ */
 
 // admin/js/admin.js → ../../js/firebase-config.js (sube 2 niveles: admin/js → admin → raíz → js/)
-import { db } from '../../js/firebase-config.js';
-import { 
-    ref, 
-    onValue, 
-    get, 
-    update, 
+import { db, firebaseConfig } from '../../js/firebase-config.js';
+import {
+    ref,
+    onValue,
+    get,
+    update,
     remove,
     set
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signOut as secondarySignOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+// ===== UTILIDADES DE ESCAPADO (evitar XSS) =====
+// Todo dato que venga de un formulario (público o del panel) se trata como
+// no confiable: se escapa antes de insertarlo en innerHTML, tanto en texto
+// como dentro de atributos value="...".
+function escapeHtml(valor) {
+    if (valor === null || valor === undefined) return '';
+    return String(valor)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
 // ===== DATOS GLOBALES =====
 let appointments = [];
@@ -228,21 +244,21 @@ window.onDayClick = function(dateStr) {
     let citasHtml = '';
     dayApps.forEach((app) => {
         const estadoBadge = getStatusBadge(app.status || 'pendiente');
-        const hora = app.hora_preferida || 'No especificada';
-        const servicio = app.tipo_consulta || 'General';
-        const modalidad = app.modalidad || 'Presencial';
-        const descripcion = app.descripcion ? `<div class="appointment-desc"><strong>Descripción:</strong> ${app.descripcion}</div>` : '';
+        const hora = escapeHtml(app.hora_preferida || 'No especificada');
+        const servicio = escapeHtml(app.tipo_consulta || 'General');
+        const modalidad = escapeHtml(app.modalidad || 'Presencial');
+        const descripcion = app.descripcion ? `<div class="appointment-desc"><strong>Descripción:</strong> ${escapeHtml(app.descripcion)}</div>` : '';
 
         citasHtml += `
             <div class="appointment-card">
                 <div class="appointment-main">
                     <div class="appointment-header">
-                        <span class="appointment-name">${app.nombre} ${app.apellidos || ''}</span>
+                        <span class="appointment-name">${escapeHtml(app.nombre)} ${escapeHtml(app.apellidos || '')}</span>
                         ${estadoBadge}
                     </div>
                     <div class="appointment-contact">
-                        <i class="fas fa-phone"></i> ${app.telefono} &nbsp;|&nbsp;
-                        <i class="fas fa-envelope"></i> ${app.email}
+                        <i class="fas fa-phone"></i> ${escapeHtml(app.telefono)} &nbsp;|&nbsp;
+                        <i class="fas fa-envelope"></i> ${escapeHtml(app.email)}
                     </div>
                     <div class="appointment-meta">
                         <span><i class="fas fa-briefcase"></i> ${servicio}</span>
@@ -290,9 +306,9 @@ function renderDashboardAppointments() {
     }
     tbody.innerHTML = recent.map(app => `
         <tr>
-            <td><strong>${app.nombre} ${app.apellidos || ''}</strong><br><span style="font-size:0.8rem;color:var(--admin-text-muted);">${app.telefono}</span></td>
-            <td>${app.tipo_consulta || 'General'}</td>
-            <td>${app.fecha_preferida ? formatDate(app.fecha_preferida) : 'Pendiente'} ${app.hora_preferida || ''}</td>
+            <td><strong>${escapeHtml(app.nombre)} ${escapeHtml(app.apellidos || '')}</strong><br><span style="font-size:0.8rem;color:var(--admin-text-muted);">${escapeHtml(app.telefono)}</span></td>
+            <td>${escapeHtml(app.tipo_consulta || 'General')}</td>
+            <td>${app.fecha_preferida ? formatDate(app.fecha_preferida) : 'Pendiente'} ${escapeHtml(app.hora_preferida || '')}</td>
             <td>${getStatusBadge(app.status || 'pendiente')}</td>
             <td>
                 <button class="action-btn edit" onclick="window.editAppointment('${app.id}')"><i class="fas fa-edit"></i></button>
@@ -312,11 +328,11 @@ function renderAppointmentsTable() {
     tbody.innerHTML = appointments.map(app => `
         <tr>
             <td>#${String(app.id || '').slice(-3).padStart(3,'0')}</td>
-            <td><strong>${app.nombre} ${app.apellidos || ''}</strong></td>
-            <td>${app.telefono}</td>
-            <td>${app.tipo_consulta || 'General'}</td>
-            <td>${app.fecha_preferida ? formatDate(app.fecha_preferida) : 'Pendiente'} ${app.hora_preferida || ''}</td>
-            <td>${app.modalidad || 'Presencial'}</td>
+            <td><strong>${escapeHtml(app.nombre)} ${escapeHtml(app.apellidos || '')}</strong></td>
+            <td>${escapeHtml(app.telefono)}</td>
+            <td>${escapeHtml(app.tipo_consulta || 'General')}</td>
+            <td>${app.fecha_preferida ? formatDate(app.fecha_preferida) : 'Pendiente'} ${escapeHtml(app.hora_preferida || '')}</td>
+            <td>${escapeHtml(app.modalidad || 'Presencial')}</td>
             <td>${getStatusBadge(app.status || 'pendiente')}</td>
             <td>
                 <button class="action-btn edit" onclick="window.editAppointment('${app.id}')"><i class="fas fa-edit"></i></button>
@@ -336,11 +352,11 @@ function renderClientsTable() {
     }
     tbody.innerHTML = clients.map(c => `
         <tr>
-            <td><strong>${c.nombre} ${c.apellidos || ''}</strong></td>
-            <td>${c.dni || 'N/D'}</td>
-            <td>${c.telefono}</td>
-            <td>${c.email}</td>
-            <td>${c.ultima_cita || 'Nunca'}</td>
+            <td><strong>${escapeHtml(c.nombre)} ${escapeHtml(c.apellidos || '')}</strong></td>
+            <td>${escapeHtml(c.dni || 'N/D')}</td>
+            <td>${escapeHtml(c.telefono)}</td>
+            <td>${escapeHtml(c.email)}</td>
+            <td>${escapeHtml(c.ultima_cita || 'Nunca')}</td>
             <td>${c.total_citas || 0}</td>
             <td>
                 <button class="action-btn" onclick="window.viewClient('${c.id}')"><i class="fas fa-eye"></i></button>
@@ -360,7 +376,7 @@ function renderNotifications() {
     list.innerHTML = notifications.map(n => `
         <div class="notification-item">
             <div class="notification-icon ${n.type || 'appointment'}"><i class="fas ${n.icon || 'fa-bell'}"></i></div>
-            <div class="notification-content"><p><strong>${n.title || 'Notificación'}:</strong> ${n.message}</p><div class="notification-time">${new Date(n.fecha).toLocaleString('es-ES')}</div></div>
+            <div class="notification-content"><p><strong>${escapeHtml(n.title || 'Notificación')}:</strong> ${escapeHtml(n.message)}</p><div class="notification-time">${new Date(n.fecha).toLocaleString('es-ES')}</div></div>
             <button class="action-btn delete" onclick="window.deleteNotification('${n.id}')"><i class="fas fa-times"></i></button>
         </div>
     `).join('');
@@ -386,8 +402,8 @@ function renderAdminsList() {
 
     let html = '';
     admins.forEach(admin => {
-        const iniciales = `${(admin.nombre?.charAt(0) || 'A')}${(admin.apellidos?.charAt(0) || 'D')}`;
-        const nombreCompleto = `${admin.nombre} ${admin.apellidos || ''}`.trim();
+        const iniciales = `${escapeHtml(admin.nombre?.charAt(0) || 'A')}${escapeHtml(admin.apellidos?.charAt(0) || 'D')}`;
+        const nombreCompleto = `${escapeHtml(admin.nombre)} ${escapeHtml(admin.apellidos || '')}`.trim();
         const estadoClass = admin.active ? 'confirmed' : 'cancelled';
         const estadoTexto = admin.active ? 'Activo' : 'Inactivo';
         const rolTexto = admin.role === 'administrador' ? 'Admin Total' : admin.role === 'editor' ? 'Editor' : 'Visor';
@@ -399,21 +415,21 @@ function renderAdminsList() {
                 <div class="admin-list-info">
                     <div class="name">${nombreCompleto}</div>
                     <div class="email">
-                        <i class="fas fa-envelope" style="font-size: 0.7rem; margin-right: 4px;"></i>${admin.email}
+                        <i class="fas fa-envelope" style="font-size: 0.7rem; margin-right: 4px;"></i>${escapeHtml(admin.email)}
                         <span style="margin: 0 8px;">|</span>
-                        <i class="fas fa-phone" style="font-size: 0.7rem; margin-right: 4px;"></i>${admin.telefono || 'N/D'}
+                        <i class="fas fa-phone" style="font-size: 0.7rem; margin-right: 4px;"></i>${escapeHtml(admin.telefono || 'N/D')}
                         <span style="margin: 0 8px;">|</span>
-                        <i class="fas fa-id-card" style="font-size: 0.7rem; margin-right: 4px;"></i>${admin.dni || 'N/D'}
+                        <i class="fas fa-id-card" style="font-size: 0.7rem; margin-right: 4px;"></i>${escapeHtml(admin.dni || 'N/D')}
                     </div>
                     <div style="margin-top: 6px; display: flex; gap: 8px; align-items: center;">
                         <span class="status-badge ${estadoClass}" style="font-size: 0.7rem;">${estadoTexto}</span>
                         <span style="font-size: 0.75rem; color: ${rolColor}; font-weight: 600; background: ${rolColor}15; padding: 2px 8px; border-radius: 4px;">${rolTexto}</span>
-                        <span style="font-size: 0.75rem; color: var(--admin-text-muted);">${admin.cargo || ''}</span>
+                        <span style="font-size: 0.75rem; color: var(--admin-text-muted);">${escapeHtml(admin.cargo || '')}</span>
                     </div>
                 </div>
                 <div class="admin-list-actions">
                     <button class="btn-icon edit" title="Editar" onclick="window.editAdmin('${admin.uid}')"><i class="fas fa-edit"></i></button>
-                    <button class="btn-icon" title="Eliminar" onclick="window.deleteAdmin('${admin.uid}', '${nombreCompleto.replace(/'/g, "\'")}')"><i class="fas fa-trash-alt"></i></button>
+                    <button class="btn-icon" title="Eliminar" onclick="window.deleteAdmin('${admin.uid}')"><i class="fas fa-trash-alt"></i></button>
                 </div>
             </div>
         `;
@@ -453,8 +469,28 @@ window.createNewAdmin = async function() {
     }
 
     try {
-        // Generar un UID único para el nuevo admin
-        const newUid = 'admin_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        // IMPORTANTE (seguridad): antes esto generaba un UID falso
+        // ('admin_' + timestamp) y guardaba la contraseña en TEXTO PLANO
+        // en la base de datos — cualquiera con acceso de lectura al nodo
+        // 'usuarios' podía leer todas las contraseñas, y además esa cuenta
+        // nunca podía iniciar sesión de verdad (no existía en Firebase
+        // Authentication). Ahora se crea una cuenta real.
+        //
+        // Se usa una app de Firebase SECUNDARIA y temporal solo para dar
+        // de alta la cuenta: si se usara la app principal,
+        // createUserWithEmailAndPassword iniciaría sesión automáticamente
+        // como el nuevo usuario y cerraría la sesión de quien lo está
+        // creando ahora mismo.
+        const secondaryApp = initializeApp(firebaseConfig, 'AdminCreation_' + Date.now());
+        const secondaryAuth = getAuth(secondaryApp);
+        let newUid;
+        try {
+            const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+            newUid = userCredential.user.uid;
+            await secondarySignOut(secondaryAuth);
+        } finally {
+            await deleteApp(secondaryApp);
+        }
 
         const adminData = {
             uid: newUid,
@@ -466,13 +502,18 @@ window.createNewAdmin = async function() {
             cargo: cargo || 'Administrador',
             role: role,
             active: active,
-            password: password, // Nota: en producción debería hashearse
+            // La contraseña NUNCA se guarda aquí: ya vive, con hash, en
+            // Firebase Authentication (fuera del alcance de las reglas de
+            // Realtime Database).
             createdAt: new Date().toISOString(),
-            createdBy: 'manual',
+            createdBy: 'panel-admin',
             lastLogin: null
         };
 
         await set(ref(db, 'usuarios/' + newUid), adminData);
+        if (role === 'administrador') {
+            await set(ref(db, 'administradores/' + newUid), { activo: true });
+        }
 
         showAdminNotification('success', 'Administrador creado', `${nombre} ${apellidos} ha sido añadido como ${role === 'administrador' ? 'Administrador' : role === 'editor' ? 'Editor' : 'Visor'}.`);
 
@@ -482,7 +523,13 @@ window.createNewAdmin = async function() {
 
     } catch (error) {
         console.error('Error al crear administrador:', error);
-        showAdminNotification('error', 'Error', 'No se pudo crear el administrador. Inténtelo de nuevo.');
+        if (error.code === 'auth/email-already-in-use') {
+            showAdminNotification('error', 'Email en uso', 'Ya existe una cuenta con ese email.');
+        } else if (error.code === 'auth/weak-password') {
+            showAdminNotification('error', 'Contraseña débil', 'Firebase exige una contraseña más segura (mínimo 6 caracteres).');
+        } else {
+            showAdminNotification('error', 'Error', 'No se pudo crear el administrador. Inténtelo de nuevo.');
+        }
     }
 };
 
@@ -512,32 +559,32 @@ window.editAdmin = async function(uid) {
         modal.innerHTML = `
             <button class="modal-close" onclick="closeEditAdminModal()"><i class="fas fa-times-circle"></i></button>
             <h2 class="modal-title"><i class="fas fa-user-edit"></i> Editar Administrador</h2>
-            <p class="modal-subtitle">${admin.nombre} ${admin.apellidos || ''}</p>
+            <p class="modal-subtitle">${escapeHtml(admin.nombre)} ${escapeHtml(admin.apellidos || '')}</p>
 
             <div class="admin-form-grid">
                 <div class="settings-group">
                     <label class="settings-label">Nombre</label>
-                    <input type="text" id="edit-admin-nombre" class="settings-input" value="${admin.nombre || ''}">
+                    <input type="text" id="edit-admin-nombre" class="settings-input" value="${escapeHtml(admin.nombre || '')}">
                 </div>
                 <div class="settings-group">
                     <label class="settings-label">Apellidos</label>
-                    <input type="text" id="edit-admin-apellidos" class="settings-input" value="${admin.apellidos || ''}">
+                    <input type="text" id="edit-admin-apellidos" class="settings-input" value="${escapeHtml(admin.apellidos || '')}">
                 </div>
                 <div class="settings-group">
                     <label class="settings-label">DNI / NIE</label>
-                    <input type="text" id="edit-admin-dni" class="settings-input" value="${admin.dni || ''}">
+                    <input type="text" id="edit-admin-dni" class="settings-input" value="${escapeHtml(admin.dni || '')}">
                 </div>
                 <div class="settings-group">
                     <label class="settings-label">Teléfono</label>
-                    <input type="tel" id="edit-admin-telefono" class="settings-input" value="${admin.telefono || ''}">
+                    <input type="tel" id="edit-admin-telefono" class="settings-input" value="${escapeHtml(admin.telefono || '')}">
                 </div>
                 <div class="settings-group">
                     <label class="settings-label">Email</label>
-                    <input type="email" id="edit-admin-email" class="settings-input" value="${admin.email || ''}">
+                    <input type="email" id="edit-admin-email" class="settings-input" value="${escapeHtml(admin.email || '')}">
                 </div>
                 <div class="settings-group">
                     <label class="settings-label">Cargo</label>
-                    <input type="text" id="edit-admin-cargo" class="settings-input" value="${admin.cargo || ''}">
+                    <input type="text" id="edit-admin-cargo" class="settings-input" value="${escapeHtml(admin.cargo || '')}">
                 </div>
                 <div class="settings-group">
                     <label class="settings-label">Estado</label>
@@ -602,11 +649,18 @@ window.saveAdminChanges = async function(uid) {
 };
 
 // ========== ELIMINAR ADMINISTRADOR ==========
-window.deleteAdmin = async function(uid, nombre) {
+window.deleteAdmin = async function(uid) {
+    const adminEnc = admins.find(a => a.uid === uid);
+    const nombre = adminEnc ? `${adminEnc.nombre} ${adminEnc.apellidos || ''}`.trim() : 'este administrador';
     if (!confirm(`¿Eliminar al administrador "${nombre}"?\n\nEsta acción no se puede deshacer.`)) return;
 
     try {
         await remove(ref(db, 'usuarios/' + uid));
+        await remove(ref(db, 'administradores/' + uid));
+        // NOTA: esto borra el perfil y el acceso, pero no la cuenta de
+        // Firebase Authentication en sí (el SDK de cliente no permite
+        // borrar cuentas de otras personas; haría falta una Cloud Function
+        // con el Admin SDK — ver SECURITY.md).
         showAdminNotification('success', 'Eliminado', `El administrador "${nombre}" ha sido eliminado.`);
     } catch (error) {
         console.error('Error al eliminar admin:', error);
@@ -733,7 +787,7 @@ function showEditModal(app) {
     modal.innerHTML = `
         <button class="modal-close" onclick="closeEditModal()"><i class="fas fa-times-circle"></i></button>
         <h2 class="modal-title">Editar cita</h2>
-        <p class="modal-subtitle">Cliente: <strong>${app.nombre} ${app.apellidos || ''}</strong> · ${app.telefono}</p>
+        <p class="modal-subtitle">Cliente: <strong>${escapeHtml(app.nombre)} ${escapeHtml(app.apellidos || '')}</strong> · ${escapeHtml(app.telefono)}</p>
 
         <div class="form-group">
             <label>Estado</label>
@@ -762,11 +816,11 @@ function showEditModal(app) {
         </div>
         <div class="form-group">
             <label>Nota interna</label>
-            <textarea id="modal-nota" rows="2" class="settings-input">${app.nota_interna || ''}</textarea>
+            <textarea id="modal-nota" rows="2" class="settings-input">${escapeHtml(app.nota_interna || '')}</textarea>
         </div>
         <div class="form-group">
             <label>Mensaje para el cliente</label>
-            <textarea id="modal-mensaje" rows="2" class="settings-input">${app.mensaje_cliente || ''}</textarea>
+            <textarea id="modal-mensaje" rows="2" class="settings-input">${escapeHtml(app.mensaje_cliente || '')}</textarea>
         </div>
 
         <div class="modal-actions">
@@ -953,7 +1007,7 @@ function showAdminNotification(type, title, message) {
     notif.innerHTML = `
         <div style="display:flex;align-items:flex-start;gap:10px;">
             <i class="fas ${icon}" style="font-size:1.3rem;margin-top:2px;"></i>
-            <div style="flex:1;"><div style="font-weight:700;font-size:0.95rem;">${title}</div><div style="font-size:0.85rem;opacity:0.95;">${message}</div></div>
+            <div style="flex:1;"><div style="font-weight:700;font-size:0.95rem;">${escapeHtml(title)}</div><div style="font-size:0.85rem;opacity:0.95;">${escapeHtml(message)}</div></div>
             <i class="fas fa-times" style="font-size:0.9rem;opacity:0.7;cursor:pointer;" onclick="this.parentElement.parentElement.remove()"></i>
         </div>
     `;
