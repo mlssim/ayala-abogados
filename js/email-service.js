@@ -20,10 +20,10 @@ import './appointment-service.js';
 // Mientras publicKey siga en 'YOUR_PUBLIC_KEY', todo funciona en modo
 // simulación / con el cliente de correo como respaldo, sin dar error.
 const EMAILJS_CONFIG = {
-    publicKey: 'YOUR_PUBLIC_KEY',
-    serviceId: 'YOUR_SERVICE_ID',
+    publicKey: 'UZNIPbHSWXwndXafL',
+    serviceId: 'service_gw0zv4e',
     templateId: 'YOUR_TEMPLATE_ID',
-    confirmationTemplateId: 'YOUR_CONFIRMATION_TEMPLATE_ID'
+    confirmationTemplateId: 'template_e3h52my'
 };
 
 // Inicializar EmailJS si está configurado

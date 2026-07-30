@@ -881,14 +881,28 @@ window.acceptAppointment = async function() {
 
     try {
         // Leemos la cita antes de actualizarla, para tener los datos del
-        // cliente (nombre, email, fecha...) con los que redactar el correo.
+        // cliente (nombre, email, telefono...) que no están en el modal.
         const snapshot = await get(ref(db, 'citas/' + editingAppointmentId));
-        const cita = sanitizeData(snapshot.val()) || {};
+        const citaOriginal = sanitizeData(snapshot.val()) || {};
 
-        await update(ref(db, 'citas/' + editingAppointmentId), {
+        // Recogemos también lo que el admin haya cambiado en el modal
+        // (fecha, hora, modalidad, nota, mensaje), para no perderlo al aceptar.
+        const data = getModalData();
+
+        const cambios = {
             status: 'confirmada',
+            modalidad: data.modalidad,
+            fecha_preferida: data.fecha,
+            hora_preferida: data.hora,
+            nota_interna: data.nota,
+            mensaje_cliente: data.mensaje,
             fechaActualizacion: new Date().toISOString()
-        });
+        };
+
+        await update(ref(db, 'citas/' + editingAppointmentId), cambios);
+
+        // Cita con los datos ya actualizados, para el correo de confirmación.
+        const cita = { ...citaOriginal, ...cambios };
 
         closeEditModal();
 
